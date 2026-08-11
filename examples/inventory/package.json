@@ -1,0 +1,13 @@
+{
+  "name": "@tesera/example-inventory",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@tesera/core": "workspace:*",
+    "@tesera/sdk": "workspace:*"
+  }
+}

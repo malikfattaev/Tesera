@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@tesera/core": ["packages/core/src/index.ts"],
+      "@tesera/sdk": ["packages/sdk/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/core/src/**/*.ts",
+    "packages/core/test/**/*.ts",
+    "packages/sdk/src/**/*.ts",
+    "examples/*/src/**/*.ts"
+  ]
+}
