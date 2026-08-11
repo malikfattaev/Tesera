@@ -36,7 +36,7 @@ export function Sidebar({ items }: { items: NavItem[] }) {
 
       <div className="mx-8 border-t border-white/10" />
 
-      <nav className="flex-1 space-y-1 px-4 py-6">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-6">
         {items.map((item) => {
           const Icon = ICONS[item.icon] ?? LayoutDashboard;
           const active =

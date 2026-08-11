@@ -84,6 +84,19 @@ function field<Z extends z.ZodTypeAny>(zod: Z, meta: FieldMeta): Field<Z> {
   return new Field(zod, meta);
 }
 
+// Foreign-key relation to another entity. "one" stores a single id (string),
+// "many" stores an array of ids. Overloads keep the value type precise.
+function relation(target: string): Field<z.ZodString>;
+function relation(target: string, cardinality: "one"): Field<z.ZodString>;
+function relation(
+  target: string,
+  cardinality: "many",
+): Field<z.ZodArray<z.ZodString>>;
+function relation(target: string, cardinality: "one" | "many" = "one"): AnyField {
+  const base = cardinality === "many" ? z.array(z.string()) : z.string();
+  return field(base, { kind: "relation", relation: { target, cardinality } });
+}
+
 /**
  * The field DSL. Each helper returns a strongly-typed {@link Field} carrying
  * both a zod schema and metadata — one declaration drives validation,
@@ -116,10 +129,7 @@ export const t = {
     return field(z.custom<T>(() => true), { kind: "json" });
   },
   /** Foreign-key relation to another entity (stores the target id/ids). */
-  relation(target: string, cardinality: "one" | "many" = "one") {
-    const base = cardinality === "one" ? z.string() : z.array(z.string());
-    return field(base, { kind: "relation", relation: { target, cardinality } });
-  },
+  relation,
 } as const;
 
 export type AnyField = Field<z.ZodTypeAny>;
