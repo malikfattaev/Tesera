@@ -1,28 +1,30 @@
-import {
-  Badge,
-  Card,
-  CardHeader,
-  DataTable,
-  PageHeader,
-  StatCard,
-  type Column,
-} from "@tesera/ui";
+import { Badge, Card, CardHeader, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
-import { DEPARTMENT_LABELS, Employee } from "@/src/tesera/modules/people";
+import { Department, Employee, Position } from "@/src/tesera/modules/people";
+import { createEmployee } from "@/src/tesera/actions";
 import { money } from "@/src/tesera/format";
-import { AddEmployeeForm } from "@/src/ui/AddEmployeeForm";
+import { RecordForm } from "@/src/ui/RecordForm";
 
 export default async function PeoplePage() {
   const app = await getApp();
-  const employees = await app
-    .repo(Employee)
-    .list({ orderBy: { field: "fullName", direction: "asc" } });
+  const [employees, positions, departments] = await Promise.all([
+    app.repo(Employee).list({ orderBy: { field: "fullName", direction: "asc" } }),
+    app.repo(Position).list({ orderBy: { field: "name", direction: "asc" } }),
+    app.repo(Department).list({ orderBy: { field: "name", direction: "asc" } }),
+  ]);
+
+  const positionName = (id: string) => positions.find((p) => p.id === id)?.name ?? "—";
+  const departmentName = (id: string) => departments.find((d) => d.id === id)?.name ?? "—";
   const payroll = employees.filter((e) => e.active).reduce((s, e) => s + e.salary, 0);
 
   const columns: Column<(typeof employees)[number]>[] = [
-    { key: "fullName", header: "Сотрудник", render: (e) => <span className="font-medium text-ink">{e.fullName}</span> },
-    { key: "position", header: "Должность", render: (e) => e.position },
-    { key: "department", header: "Отдел", render: (e) => DEPARTMENT_LABELS[e.department] ?? e.department },
+    {
+      key: "fullName",
+      header: "Сотрудник",
+      render: (e) => <span className="font-medium text-ink">{e.fullName}</span>,
+    },
+    { key: "position", header: "Должность", render: (e) => positionName(e.positionId) },
+    { key: "department", header: "Отдел", render: (e) => departmentName(e.departmentId) },
     { key: "email", header: "Email", render: (e) => e.email ?? "—" },
     { key: "salary", header: "Оклад", align: "right", render: (e) => money(e.salary) },
     {
@@ -35,7 +37,7 @@ export default async function PeoplePage() {
 
   return (
     <>
-      <PageHeader title="Люди" subtitle="Сотрудники компании" />
+      <PageHeader title="Сотрудники" subtitle="Команда компании" />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Сотрудников" value={employees.length} />
@@ -46,14 +48,34 @@ export default async function PeoplePage() {
       <Card className="mt-6">
         <CardHeader title="Новый сотрудник" />
         <div className="p-5">
-          <AddEmployeeForm />
+          <RecordForm
+            action={createEmployee}
+            submitLabel="Добавить сотрудника"
+            fields={[
+              { name: "fullName", label: "ФИО", placeholder: "Имя Фамилия", required: true },
+              {
+                name: "positionId",
+                label: "Должность",
+                type: "select",
+                required: true,
+                options: positions.map((p) => ({ value: p.id, label: p.name })),
+              },
+              {
+                name: "departmentId",
+                label: "Отдел",
+                type: "select",
+                required: true,
+                options: departments.map((d) => ({ value: d.id, label: d.name })),
+              },
+              { name: "email", label: "Email", type: "email", placeholder: "name@tesera.dev" },
+              { name: "salary", label: "Оклад", type: "number", step: "500000", placeholder: "0" },
+              { name: "hiredAt", label: "Дата найма", type: "date" },
+            ]}
+          />
         </div>
       </Card>
 
       <div className="mt-6">
-        <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Список
-        </div>
         <DataTable columns={columns} rows={employees} empty="Сотрудников пока нет" />
       </div>
     </>

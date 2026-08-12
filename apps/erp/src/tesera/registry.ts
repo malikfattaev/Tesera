@@ -1,34 +1,69 @@
 import type { TeseraModule } from "@tesera/core";
-import { moneyModule } from "./modules/money";
+import { financeModule } from "./modules/finance";
 import { peopleModule } from "./modules/people";
 import { projectsModule } from "./modules/projects";
-import { directoriesModule } from "./modules/directories";
+
+export interface NavLink {
+  label: string;
+  href: string;
+}
 
 export interface NavItem {
   label: string;
-  href: string;
   /** Icon key resolved to a Lucide icon in the Sidebar. */
   icon: string;
+  /** Set for a plain link; omit when the item is a group. */
+  href?: string;
+  /** Set for a collapsible group; omit for a plain link. */
+  children?: NavLink[];
 }
 
 /**
- * Sidebar navigation. Adding a module means adding a page under app/(erp) and
- * one entry here — the shell renders the rest.
+ * Sidebar navigation. A module is either a single link or a group that expands
+ * into its sections; adding one means adding a page under app/(erp) and an
+ * entry here — the shell renders the rest.
  */
 export const nav: NavItem[] = [
   { label: "Панель управления", href: "/dashboard", icon: "dashboard" },
-  { label: "Деньги", href: "/money", icon: "wallet" },
-  { label: "Люди", href: "/people", icon: "users" },
-  { label: "Проекты", href: "/projects", icon: "projects" },
-  { label: "Отчёты", href: "/reports", icon: "reports" },
-  { label: "Справочники", href: "/directories", icon: "book" },
-  { label: "Администрирование", href: "/admin", icon: "settings" },
+  {
+    label: "Финансы",
+    icon: "wallet",
+    children: [
+      { label: "Категории расходов", href: "/finance/categories" },
+      { label: "Расчётные счета", href: "/finance/accounts" },
+      { label: "Операции", href: "/finance/transactions" },
+    ],
+  },
+  {
+    label: "Проекты",
+    icon: "projects",
+    children: [
+      { label: "Проекты", href: "/projects" },
+      { label: "Контрагенты", href: "/projects/counterparties" },
+    ],
+  },
+  {
+    label: "Люди",
+    icon: "users",
+    children: [
+      { label: "Сотрудники", href: "/people" },
+      { label: "Должности", href: "/people/positions" },
+      { label: "Отделы", href: "/people/departments" },
+    ],
+  },
+  {
+    label: "Отчёты",
+    icon: "reports",
+    children: [
+      { label: "Движения по деньгам", href: "/reports/cashflow" },
+      { label: "Зарплатные ведомости", href: "/reports/payroll" },
+    ],
+  },
 ];
 
 /** Core data modules booted into the engine. */
 export const dataModules: TeseraModule[] = [
-  moneyModule,
+  financeModule,
   peopleModule,
   projectsModule,
-  directoriesModule,
 ];

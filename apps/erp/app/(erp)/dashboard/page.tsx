@@ -7,12 +7,15 @@ import {
   StatCard,
 } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
-import { CATEGORY_LABELS, Transaction } from "@/src/tesera/modules/money";
+import { Category, Transaction } from "@/src/tesera/modules/finance";
 import { money, monthKey, monthLabel, signedMoney } from "@/src/tesera/format";
 
 export default async function DashboardPage() {
   const app = await getApp();
-  const txs = await app.repo(Transaction).list();
+  const [txs, categories] = await Promise.all([
+    app.repo(Transaction).list(),
+    app.repo(Category).list(),
+  ]);
 
   const income = txs.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
   const expense = txs.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
@@ -37,10 +40,10 @@ export default async function DashboardPage() {
   // Expenses grouped by category.
   const byCategory = new Map<string, number>();
   for (const t of txs) {
-    if (t.direction === "out") byCategory.set(t.category, (byCategory.get(t.category) ?? 0) + t.amount);
+    if (t.direction === "out") byCategory.set(t.categoryId, (byCategory.get(t.categoryId) ?? 0) + t.amount);
   }
-  const donutData = [...byCategory.entries()].map(([key, value]) => ({
-    label: CATEGORY_LABELS[key] ?? key,
+  const donutData = [...byCategory.entries()].map(([id, value]) => ({
+    label: categories.find((c) => c.id === id)?.name ?? "—",
     value,
   }));
   const expenseTotal = donutData.reduce((s, d) => s + d.value, 0);
