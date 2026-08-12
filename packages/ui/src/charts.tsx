@@ -67,7 +67,15 @@ export function BarChart({
             formatter={(value: number) => full(value)}
             cursor={{ fill: "rgba(124,58,237,0.06)" }}
           />
-          <Bar dataKey="value" fill={BRAND} radius={[6, 6, 0, 0]} maxBarSize={64} />
+          {/* Animation off: StrictMode's double mount can interrupt it and
+              leave the bars stuck at zero height. */}
+          <Bar
+            dataKey="value"
+            fill={BRAND}
+            radius={[6, 6, 0, 0]}
+            maxBarSize={64}
+            isAnimationActive={false}
+          />
         </RBarChart>
       </ResponsiveContainer>
     </div>
@@ -98,6 +106,7 @@ export function DonutChart({
             outerRadius={92}
             paddingAngle={2}
             stroke="none"
+            isAnimationActive={false}
           >
             {data.map((_, index) => (
               <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
