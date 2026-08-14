@@ -185,15 +185,17 @@ export function Field({
   label,
   htmlFor,
   hint,
+  className,
   children,
 }: {
   label: string;
   htmlFor?: string;
   hint?: string;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1.5" htmlFor={htmlFor}>
+    <label className={cn("flex flex-col gap-1.5", className)} htmlFor={htmlFor}>
       <span className="text-xs font-medium text-slate-500">{label}</span>
       {children}
       {hint ? <span className="text-xs text-slate-400">{hint}</span> : null}

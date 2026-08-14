@@ -11,12 +11,17 @@ export interface FormFieldOption {
 export interface FormFieldSpec {
   name: string;
   label: string;
-  type?: "text" | "number" | "date" | "email" | "select";
+  type?: "text" | "number" | "date" | "email" | "select" | "password" | "checklist";
   options?: FormFieldOption[];
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
+  /** Checked values for a checklist field. */
+  defaultValues?: string[];
   step?: string;
+  hint?: string;
+  /** Render across both columns (long inputs, checklists). */
+  wide?: boolean;
 }
 
 /**
@@ -55,8 +60,31 @@ export function RecordForm({
       className="grid gap-4 sm:grid-cols-2"
     >
       {fields.map((field) => (
-        <Field key={field.name} label={field.label}>
-          {field.type === "select" ? (
+        <Field
+          key={field.name}
+          label={field.label}
+          hint={field.hint}
+          className={field.wide || field.type === "checklist" ? "sm:col-span-2" : undefined}
+        >
+          {field.type === "checklist" ? (
+            <div className="grid gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-2">
+              {(field.options ?? []).map((option) => (
+                <label
+                  key={option.value}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+                >
+                  <input
+                    type="checkbox"
+                    name={field.name}
+                    value={option.value}
+                    defaultChecked={field.defaultValues?.includes(option.value)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#7c3aed] focus:ring-[#7c3aed]"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+          ) : field.type === "select" ? (
             <Select
               name={field.name}
               defaultValue={field.defaultValue ?? field.options?.[0]?.value}

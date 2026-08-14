@@ -1,4 +1,6 @@
 import type { Context, TeseraApp } from "@tesera/core";
+import { ACCESS_SECTIONS, Role, User } from "./modules/admin";
+import { hashPassword } from "./password";
 import { Account, Category, Transaction } from "./modules/finance";
 import { Department, Employee, Position } from "./modules/people";
 import { Counterparty, Project } from "./modules/projects";
@@ -8,6 +10,37 @@ const SYS: Context = { actor: { id: "seed", roles: ["admin"] } };
 /** Populate the engine with demo data on first boot (idempotent). */
 export async function seed(app: TeseraApp): Promise<void> {
   if ((await app.repo(Account).count()) > 0) return;
+
+  // --- Администрирование ---
+  const adminRole = await app
+    .repo(Role)
+    .create({ name: "Администратор", sections: [...ACCESS_SECTIONS] }, SYS);
+  const accountantRole = await app.repo(Role).create(
+    { name: "Бухгалтер", sections: ["dashboard", "directories", "finance", "reports"] },
+    SYS,
+  );
+  await app
+    .repo(Role)
+    .create({ name: "Менеджер проектов", sections: ["dashboard", "projects"] }, SYS);
+
+  await app.repo(User).create(
+    {
+      fullName: "Малик Фаттаев",
+      login: "malik",
+      passwordHash: hashPassword("tesera123"),
+      roleId: adminRole.id,
+    },
+    SYS,
+  );
+  await app.repo(User).create(
+    {
+      fullName: "Дилноза Юсупова",
+      login: "dilnoza",
+      passwordHash: hashPassword("tesera123"),
+      roleId: accountantRole.id,
+    },
+    SYS,
+  );
 
   // --- Контрагенты (нужны раньше финансов: доходы ссылаются на них) ---
   const cp = (

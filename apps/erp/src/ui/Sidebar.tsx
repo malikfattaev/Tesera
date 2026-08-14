@@ -4,9 +4,11 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   BarChart3,
+  BookOpen,
   ChevronDown,
   FolderKanban,
   LayoutDashboard,
+  Settings,
   Users,
   Wallet,
   type LucideIcon,
@@ -20,6 +22,8 @@ const ICONS: Record<string, LucideIcon> = {
   users: Users,
   projects: FolderKanban,
   reports: BarChart3,
+  book: BookOpen,
+  settings: Settings,
 };
 
 const rowClass =

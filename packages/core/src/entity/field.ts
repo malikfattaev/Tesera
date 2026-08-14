@@ -6,6 +6,7 @@ export type FieldKind =
   | "boolean"
   | "date"
   | "enum"
+  | "multi_enum"
   | "json"
   | "relation";
 
@@ -123,7 +124,11 @@ export const t = {
     return field(z.coerce.date(), { kind: "date" });
   },
   enum<const V extends readonly [string, ...string[]]>(values: V) {
-    return field(z.enum(values), { kind: "enum" });
+    return field(z.enum(values), { kind: "enum", options: values });
+  },
+  /** Several values from a fixed set, e.g. the sections a role may open. */
+  multiEnum<const V extends readonly [string, ...string[]]>(values: V) {
+    return field(z.array(z.enum(values)), { kind: "multi_enum", options: values });
   },
   json<T = unknown>() {
     return field(z.custom<T>(() => true), { kind: "json" });

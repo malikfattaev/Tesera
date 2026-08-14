@@ -6,9 +6,11 @@ import { getApp, WEB_CONTEXT } from "./engine";
 import { balancesByAccount } from "./finance-calc";
 import { money } from "./format";
 import { valuesFromForm } from "./form-data";
+import { Role, User } from "./modules/admin";
 import { Account, Category, Transaction } from "./modules/finance";
 import { Department, Employee, Position } from "./modules/people";
 import { Counterparty, Project } from "./modules/projects";
+import { hashPassword } from "./password";
 
 /** Entities that generic row actions (view, edit, delete) can operate on. */
 const MODELS: Record<string, EntityModel> = {
@@ -20,6 +22,8 @@ const MODELS: Record<string, EntityModel> = {
   position: Position,
   counterparty: Counterparty,
   project: Project,
+  role: Role,
+  user: User,
 };
 
 function modelFor(entity: string): EntityModel {
@@ -73,6 +77,21 @@ export async function updateRecord(
   const app = await getApp();
   const model = modelFor(entity);
   const values = valuesFromForm(model, formData);
+
+  if (entity === "user") {
+    // The password field is optional on edit: filled in means "set a new one".
+    delete values.passwordHash;
+    const password = String(formData.get("password") ?? "").trim();
+    if (password) values.passwordHash = hashPassword(password);
+
+    const login = String(values.login ?? "").trim();
+    if (login) {
+      const taken = (await app.repo(User).list()).some(
+        (u) => u.login === login && u.id !== id,
+      );
+      if (taken) return { ok: false, error: `Логин «${login}» уже занят.` };
+    }
+  }
 
   // Editing an operation must respect the same balance rule as creating one.
   if (entity === "transaction") {
@@ -249,6 +268,68 @@ export async function createTransfer(formData: FormData): Promise<ActionResult> 
   );
   revalidateMoney();
   return { ok: true };
+}
+
+// --- Администрирование ---
+
+/** Роль: a name plus the sections it may open. */
+export async function createRole(formData: FormData): Promise<ActionResult> {
+  const app = await getApp();
+  await app.repo(Role).create(
+    {
+      name: text(formData, "name"),
+      sections: formData.getAll("sections").map(String) as never,
+    },
+    WEB_CONTEXT,
+  );
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Пользователь: login and password to sign in, plus the role that grants access. */
+export async function createUser(formData: FormData): Promise<ActionResult> {
+  const app = await getApp();
+  const login = text(formData, "login");
+  const password = text(formData, "password");
+
+  if (password.length < 6) {
+    return { ok: false, error: "Пароль должен быть не короче 6 символов." };
+  }
+  const taken = (await app.repo(User).list()).some((u) => u.login === login);
+  if (taken) return { ok: false, error: `Логин «${login}» уже занят.` };
+
+  await app.repo(User).create(
+    {
+      fullName: text(formData, "fullName"),
+      login,
+      passwordHash: hashPassword(password),
+      roleId: text(formData, "roleId"),
+      active: true,
+    },
+    WEB_CONTEXT,
+  );
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// --- Справочники ---
+
+/** Категория расхода. */
+export async function createExpenseCategory(formData: FormData): Promise<void> {
+  const app = await getApp();
+  await app
+    .repo(Category)
+    .create({ name: text(formData, "name"), direction: "out" }, WEB_CONTEXT);
+  revalidatePath("/", "layout");
+}
+
+/** Категория дохода. */
+export async function createIncomeCategory(formData: FormData): Promise<void> {
+  const app = await getApp();
+  await app
+    .repo(Category)
+    .create({ name: text(formData, "name"), direction: "in" }, WEB_CONTEXT);
+  revalidatePath("/", "layout");
 }
 
 // --- Люди ---

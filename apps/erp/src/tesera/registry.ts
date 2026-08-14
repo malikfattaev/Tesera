@@ -1,4 +1,5 @@
 import type { TeseraModule } from "@tesera/core";
+import { adminModule } from "./modules/admin";
 import { financeModule } from "./modules/finance";
 import { peopleModule } from "./modules/people";
 import { projectsModule } from "./modules/projects";
@@ -26,10 +27,25 @@ export interface NavItem {
 export const nav: NavItem[] = [
   { label: "Панель управления", href: "/dashboard", icon: "dashboard" },
   {
+    label: "Администрирование",
+    icon: "settings",
+    children: [
+      { label: "Пользователи", href: "/admin/users" },
+      { label: "Роли", href: "/admin/roles" },
+    ],
+  },
+  {
+    label: "Справочники",
+    icon: "book",
+    children: [
+      { label: "Категории расходов", href: "/directories/expense-categories" },
+      { label: "Категории доходов", href: "/directories/income-categories" },
+    ],
+  },
+  {
     label: "Финансы",
     icon: "wallet",
     children: [
-      { label: "Категории расходов", href: "/finance/categories" },
       { label: "Расчётные счета", href: "/finance/accounts" },
       { label: "Операции", href: "/finance/transactions" },
     ],
@@ -66,4 +82,5 @@ export const dataModules: TeseraModule[] = [
   financeModule,
   peopleModule,
   projectsModule,
+  adminModule,
 ];

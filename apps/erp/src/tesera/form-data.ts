@@ -24,6 +24,12 @@ export function valuesFromForm(
       continue;
     }
 
+    if (meta.kind === "multi_enum") {
+      // Checkbox groups submit one entry per checked option.
+      values[name] = formData.getAll(name).map(String);
+      continue;
+    }
+
     const text = raw == null ? "" : String(raw).trim();
     if (!text) continue; // empty input: keep the stored value
 
