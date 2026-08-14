@@ -14,6 +14,10 @@ export interface Column<T> {
  * A presentational, typed data table. Columns declare how each cell renders;
  * rows are plain records (e.g. Tesera entity records). Shows an empty state
  * when there are no rows.
+ *
+ * Rows are positioned, so a cell may host a link that covers the whole row
+ * (`className="after:absolute after:inset-0"`). That keeps navigation in the
+ * caller's hands (and its router) instead of coupling the table to one.
  */
 export function DataTable<T extends { id?: string | number }>({
   columns,
@@ -50,7 +54,7 @@ export function DataTable<T extends { id?: string | number }>({
           {rows.map((row, index) => (
             <tr
               key={row.id ?? index}
-              className="transition hover:bg-slate-50/70"
+              className="group relative transition hover:bg-slate-50/70"
             >
               {columns.map((col) => (
                 <td
