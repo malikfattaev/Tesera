@@ -27,10 +27,13 @@ export function RecordForm({
   action,
   fields,
   submitLabel,
+  onDone,
 }: {
   action: (formData: FormData) => Promise<void>;
   fields: FormFieldSpec[];
   submitLabel: string;
+  /** Called after a successful submit, e.g. to close the surrounding dialog. */
+  onDone?: () => void;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   return (
@@ -39,8 +42,9 @@ export function RecordForm({
       action={async (formData) => {
         await action(formData);
         formRef.current?.reset();
+        onDone?.();
       }}
-      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      className="grid gap-4 sm:grid-cols-2"
     >
       {fields.map((field) => (
         <Field key={field.name} label={field.label}>
@@ -69,7 +73,7 @@ export function RecordForm({
           )}
         </Field>
       ))}
-      <div className="flex items-end sm:col-span-2 lg:col-span-3">
+      <div className="mt-1 flex justify-end sm:col-span-2">
         <Button type="submit">{submitLabel}</Button>
       </div>
     </form>

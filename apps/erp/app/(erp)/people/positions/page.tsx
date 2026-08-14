@@ -1,8 +1,8 @@
-import { Card, CardHeader, DataTable, PageHeader, type Column } from "@tesera/ui";
+import { DataTable, PageHeader, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Department, Employee, Position } from "@/src/tesera/modules/people";
 import { createPosition } from "@/src/tesera/actions";
-import { RecordForm } from "@/src/ui/RecordForm";
+import { AddRecord } from "@/src/ui/AddRecord";
 
 export default async function PositionsPage() {
   const app = await getApp();
@@ -29,14 +29,15 @@ export default async function PositionsPage() {
 
   return (
     <>
-      <PageHeader title="Должности" subtitle="Справочник должностей" />
-
-      <Card>
-        <CardHeader title="Новая должность" />
-        <div className="p-5">
-          <RecordForm
+      <PageHeader
+        title="Должности"
+        subtitle="Справочник должностей"
+        actions={
+          <AddRecord
+            title="Новая должность"
             action={createPosition}
             submitLabel="Добавить должность"
+            label="Новая должность"
             fields={[
               { name: "name", label: "Название", placeholder: "Например, Designer", required: true },
               {
@@ -51,12 +52,10 @@ export default async function PositionsPage() {
               { name: "note", label: "Заметка", placeholder: "Необязательно" },
             ]}
           />
-        </div>
-      </Card>
+        }
+      />
 
-      <div className="mt-6">
-        <DataTable columns={columns} rows={positions} empty="Должностей пока нет" />
-      </div>
+      <DataTable columns={columns} rows={positions} empty="Должностей пока нет" />
     </>
   );
 }

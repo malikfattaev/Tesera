@@ -1,9 +1,9 @@
-import { Badge, Card, CardHeader, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
+import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Department, Employee, Position } from "@/src/tesera/modules/people";
 import { createEmployee } from "@/src/tesera/actions";
 import { money } from "@/src/tesera/format";
-import { RecordForm } from "@/src/ui/RecordForm";
+import { AddRecord } from "@/src/ui/AddRecord";
 
 export default async function PeoplePage() {
   const app = await getApp();
@@ -37,20 +37,15 @@ export default async function PeoplePage() {
 
   return (
     <>
-      <PageHeader title="Сотрудники" subtitle="Команда компании" />
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Сотрудников" value={employees.length} />
-        <StatCard label="Активных" value={employees.filter((e) => e.active).length} />
-        <StatCard label="ФОТ в месяц" value={money(payroll)} />
-      </div>
-
-      <Card className="mt-6">
-        <CardHeader title="Новый сотрудник" />
-        <div className="p-5">
-          <RecordForm
+      <PageHeader
+        title="Сотрудники"
+        subtitle="Команда компании"
+        actions={
+          <AddRecord
+            title="Новый сотрудник"
             action={createEmployee}
             submitLabel="Добавить сотрудника"
+            label="Новый сотрудник"
             fields={[
               { name: "fullName", label: "ФИО", placeholder: "Имя Фамилия", required: true },
               {
@@ -72,8 +67,14 @@ export default async function PeoplePage() {
               { name: "hiredAt", label: "Дата найма", type: "date" },
             ]}
           />
-        </div>
-      </Card>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Сотрудников" value={employees.length} />
+        <StatCard label="Активных" value={employees.filter((e) => e.active).length} />
+        <StatCard label="ФОТ в месяц" value={money(payroll)} />
+      </div>
 
       <div className="mt-6">
         <DataTable columns={columns} rows={employees} empty="Сотрудников пока нет" />

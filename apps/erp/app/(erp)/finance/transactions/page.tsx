@@ -1,4 +1,4 @@
-import { Badge, Card, CardHeader, DataTable, PageHeader, type Column } from "@tesera/ui";
+import { Badge, DataTable, PageHeader, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import {
   Account,
@@ -8,7 +8,7 @@ import {
 } from "@/src/tesera/modules/finance";
 import { createTransaction } from "@/src/tesera/actions";
 import { formatDate, money } from "@/src/tesera/format";
-import { RecordForm } from "@/src/ui/RecordForm";
+import { AddRecord } from "@/src/ui/AddRecord";
 
 export default async function TransactionsPage() {
   const app = await getApp();
@@ -49,14 +49,15 @@ export default async function TransactionsPage() {
 
   return (
     <>
-      <PageHeader title="Операции" subtitle="Все движения денег" />
-
-      <Card>
-        <CardHeader title="Новая операция" />
-        <div className="p-5">
-          <RecordForm
+      <PageHeader
+        title="Операции"
+        subtitle="Все движения денег"
+        actions={
+          <AddRecord
+            title="Новая операция"
             action={createTransaction}
             submitLabel="Добавить операцию"
+            label="Новая операция"
             fields={[
               { name: "date", label: "Дата", type: "date", defaultValue: "2026-08-12", required: true },
               {
@@ -87,12 +88,10 @@ export default async function TransactionsPage() {
               { name: "counterparty", label: "Контрагент", placeholder: "Например, клиент" },
             ]}
           />
-        </div>
-      </Card>
+        }
+      />
 
-      <div className="mt-6">
-        <DataTable columns={columns} rows={txs} empty="Операций пока нет" />
-      </div>
+      <DataTable columns={columns} rows={txs} empty="Операций пока нет" />
     </>
   );
 }

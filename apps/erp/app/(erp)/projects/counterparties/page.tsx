@@ -1,8 +1,8 @@
-import { Badge, Card, CardHeader, DataTable, PageHeader, type Column } from "@tesera/ui";
+import { Badge, DataTable, PageHeader, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { COUNTERPARTY_KIND_LABELS, Counterparty } from "@/src/tesera/modules/projects";
 import { createCounterparty } from "@/src/tesera/actions";
-import { RecordForm } from "@/src/ui/RecordForm";
+import { AddRecord } from "@/src/ui/AddRecord";
 
 const KIND_TONES: Record<string, "brand" | "green" | "amber"> = {
   client: "green",
@@ -37,14 +37,15 @@ export default async function CounterpartiesPage() {
 
   return (
     <>
-      <PageHeader title="Контрагенты" subtitle="Клиенты, поставщики и партнёры" />
-
-      <Card>
-        <CardHeader title="Новый контрагент" />
-        <div className="p-5">
-          <RecordForm
+      <PageHeader
+        title="Контрагенты"
+        subtitle="Клиенты, поставщики и партнёры"
+        actions={
+          <AddRecord
+            title="Новый контрагент"
             action={createCounterparty}
             submitLabel="Добавить контрагента"
+            label="Новый контрагент"
             fields={[
               { name: "name", label: "Название", placeholder: "ООО Ромашка", required: true },
               {
@@ -62,12 +63,10 @@ export default async function CounterpartiesPage() {
               { name: "email", label: "Email", type: "email", placeholder: "mail@company.uz" },
             ]}
           />
-        </div>
-      </Card>
+        }
+      />
 
-      <div className="mt-6">
-        <DataTable columns={columns} rows={counterparties} empty="Контрагентов пока нет" />
-      </div>
+      <DataTable columns={columns} rows={counterparties} empty="Контрагентов пока нет" />
     </>
   );
 }

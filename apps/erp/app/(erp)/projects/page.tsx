@@ -1,9 +1,9 @@
-import { Badge, Card, CardHeader, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
+import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Counterparty, PROJECT_STATUS_LABELS, Project } from "@/src/tesera/modules/projects";
 import { createProject } from "@/src/tesera/actions";
 import { formatDate, money } from "@/src/tesera/format";
-import { RecordForm } from "@/src/ui/RecordForm";
+import { AddRecord } from "@/src/ui/AddRecord";
 
 const STATUS_TONES: Record<string, "brand" | "green" | "amber" | "neutral"> = {
   planning: "neutral",
@@ -47,20 +47,15 @@ export default async function ProjectsPage() {
 
   return (
     <>
-      <PageHeader title="Проекты" subtitle="Клиентские и внутренние проекты" />
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Всего проектов" value={projects.length} />
-        <StatCard label="В работе" value={activeCount} />
-        <StatCard label="Суммарный бюджет" value={money(totalBudget)} />
-      </div>
-
-      <Card className="mt-6">
-        <CardHeader title="Новый проект" />
-        <div className="p-5">
-          <RecordForm
+      <PageHeader
+        title="Проекты"
+        subtitle="Клиентские и внутренние проекты"
+        actions={
+          <AddRecord
+            title="Новый проект"
             action={createProject}
             submitLabel="Добавить проект"
+            label="Новый проект"
             fields={[
               { name: "name", label: "Название", placeholder: "Название проекта", required: true },
               {
@@ -89,8 +84,14 @@ export default async function ProjectsPage() {
               { name: "deadline", label: "Дедлайн", type: "date" },
             ]}
           />
-        </div>
-      </Card>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Всего проектов" value={projects.length} />
+        <StatCard label="В работе" value={activeCount} />
+        <StatCard label="Суммарный бюджет" value={money(totalBudget)} />
+      </div>
 
       <div className="mt-6">
         <DataTable columns={columns} rows={projects} empty="Проектов пока нет" />

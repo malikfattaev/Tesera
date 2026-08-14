@@ -1,9 +1,9 @@
-import { Card, CardHeader, DataTable, PageHeader, type Column } from "@tesera/ui";
+import { DataTable, PageHeader, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Department, Employee } from "@/src/tesera/modules/people";
 import { createDepartment } from "@/src/tesera/actions";
 import { money } from "@/src/tesera/format";
-import { RecordForm } from "@/src/ui/RecordForm";
+import { AddRecord } from "@/src/ui/AddRecord";
 
 export default async function DepartmentsPage() {
   const app = await getApp();
@@ -37,26 +37,25 @@ export default async function DepartmentsPage() {
 
   return (
     <>
-      <PageHeader title="Отделы" subtitle="Структура компании" />
-
-      <Card>
-        <CardHeader title="Новый отдел" />
-        <div className="p-5">
-          <RecordForm
+      <PageHeader
+        title="Отделы"
+        subtitle="Структура компании"
+        actions={
+          <AddRecord
+            title="Новый отдел"
             action={createDepartment}
             submitLabel="Добавить отдел"
+            label="Новый отдел"
             fields={[
               { name: "name", label: "Название", placeholder: "Например, Маркетинг", required: true },
               { name: "head", label: "Руководитель", placeholder: "Имя" },
               { name: "note", label: "Заметка", placeholder: "Необязательно" },
             ]}
           />
-        </div>
-      </Card>
+        }
+      />
 
-      <div className="mt-6">
-        <DataTable columns={columns} rows={departments} empty="Отделов пока нет" />
-      </div>
+      <DataTable columns={columns} rows={departments} empty="Отделов пока нет" />
     </>
   );
 }

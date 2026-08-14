@@ -1,9 +1,9 @@
-import { Card, CardHeader, PageHeader, StatCard } from "@tesera/ui";
+import { PageHeader, StatCard } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Account, ACCOUNT_KIND_LABELS, Transaction } from "@/src/tesera/modules/finance";
 import { createAccount } from "@/src/tesera/actions";
 import { money } from "@/src/tesera/format";
-import { RecordForm } from "@/src/ui/RecordForm";
+import { AddRecord } from "@/src/ui/AddRecord";
 
 export default async function AccountsPage() {
   const app = await getApp();
@@ -20,26 +20,15 @@ export default async function AccountsPage() {
 
   return (
     <>
-      <PageHeader title="Расчётные счета" subtitle="Остатки по счетам компании" />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {accounts.map((account) => (
-          <StatCard
-            key={account.id}
-            label={account.name}
-            value={money(balance.get(account.id) ?? 0)}
-            hint={`${ACCOUNT_KIND_LABELS[account.kind] ?? account.kind} · ${account.currency}`}
-            tone={(balance.get(account.id) ?? 0) < 0 ? "negative" : "default"}
-          />
-        ))}
-      </div>
-
-      <Card className="mt-6">
-        <CardHeader title="Новый счёт" />
-        <div className="p-5">
-          <RecordForm
+      <PageHeader
+        title="Расчётные счета"
+        subtitle="Остатки по счетам компании"
+        actions={
+          <AddRecord
+            title="Новый счёт"
             action={createAccount}
             submitLabel="Добавить счёт"
+            label="Новый счёт"
             fields={[
               { name: "name", label: "Название", placeholder: "Например, Карта", required: true },
               {
@@ -66,8 +55,21 @@ export default async function AccountsPage() {
               },
             ]}
           />
-        </div>
-      </Card>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {accounts.map((account) => (
+          <StatCard
+            key={account.id}
+            label={account.name}
+            value={money(balance.get(account.id) ?? 0)}
+            hint={`${ACCOUNT_KIND_LABELS[account.kind] ?? account.kind} · ${account.currency}`}
+            tone={(balance.get(account.id) ?? 0) < 0 ? "negative" : "default"}
+          />
+        ))}
+      </div>
+
     </>
   );
 }
