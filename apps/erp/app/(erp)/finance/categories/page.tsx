@@ -25,7 +25,6 @@ export default async function CategoriesPage() {
         </Badge>
       ),
     },
-    { key: "note", header: "Заметка", render: (c) => c.note ?? "—" },
   ];
 
   return (
@@ -51,7 +50,6 @@ export default async function CategoriesPage() {
                   { value: "in", label: "Приход" },
                 ],
               },
-              { name: "note", label: "Заметка", placeholder: "Необязательно" },
             ]}
           />
         }

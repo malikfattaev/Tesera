@@ -7,7 +7,6 @@ export const Category = defineEntity({
   fields: {
     name: t.string().label("Название"),
     direction: t.enum(["in", "out"]).default("out").label("Направление"),
-    note: t.string().optional().label("Заметка"),
   },
 });
 

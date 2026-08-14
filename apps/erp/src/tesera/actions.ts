@@ -27,7 +27,6 @@ export async function createCategory(formData: FormData): Promise<void> {
     {
       name: text(formData, "name"),
       direction: (text(formData, "direction") || "out") as "in" | "out",
-      note: optionalText(formData, "note"),
     },
     WEB_CONTEXT,
   );
