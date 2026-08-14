@@ -7,7 +7,6 @@ export const Department = defineEntity({
   fields: {
     name: t.string().label("Название"),
     head: t.string().optional().label("Руководитель"),
-    note: t.string().optional().label("Заметка"),
   },
 });
 
@@ -18,7 +17,6 @@ export const Position = defineEntity({
   fields: {
     name: t.string().label("Название"),
     departmentId: t.relation("department").optional().label("Отдел"),
-    note: t.string().optional().label("Заметка"),
   },
 });
 

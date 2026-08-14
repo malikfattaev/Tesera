@@ -4,6 +4,8 @@ import { Department, Employee } from "@/src/tesera/modules/people";
 import { createDepartment } from "@/src/tesera/actions";
 import { money } from "@/src/tesera/format";
 import { AddRecord } from "@/src/ui/AddRecord";
+import type { FormFieldSpec } from "@/src/ui/RecordForm";
+import { RowActions } from "@/src/ui/RowActions";
 
 export default async function DepartmentsPage() {
   const app = await getApp();
@@ -13,6 +15,22 @@ export default async function DepartmentsPage() {
   ]);
 
   const inDepartment = (id: string) => employees.filter((e) => e.departmentId === id);
+
+  const departmentFields = (department?: (typeof departments)[number]): FormFieldSpec[] => [
+    {
+      name: "name",
+      label: "Название",
+      placeholder: "Например, Маркетинг",
+      required: true,
+      defaultValue: department?.name,
+    },
+    {
+      name: "head",
+      label: "Руководитель",
+      placeholder: "Имя",
+      defaultValue: department?.head,
+    },
+  ];
 
   const columns: Column<(typeof departments)[number]>[] = [
     {
@@ -33,6 +51,29 @@ export default async function DepartmentsPage() {
       align: "right",
       render: (d) => money(inDepartment(d.id).reduce((s, e) => s + e.salary, 0)),
     },
+    {
+      key: "actions",
+      header: "Действия",
+      align: "right",
+      className: "w-28",
+      render: (d) => (
+        <RowActions
+          entity="department"
+          id={d.id}
+          title={d.name}
+          fields={departmentFields(d)}
+          details={[
+            { label: "Отдел", value: d.name },
+            { label: "Руководитель", value: d.head ?? "—" },
+            { label: "Сотрудников", value: String(inDepartment(d.id).length) },
+            {
+              label: "ФОТ",
+              value: money(inDepartment(d.id).reduce((s, e) => s + e.salary, 0)),
+            },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -46,11 +87,7 @@ export default async function DepartmentsPage() {
             action={createDepartment}
             submitLabel="Добавить отдел"
             label="Новый отдел"
-            fields={[
-              { name: "name", label: "Название", placeholder: "Например, Маркетинг", required: true },
-              { name: "head", label: "Руководитель", placeholder: "Имя" },
-              { name: "note", label: "Заметка", placeholder: "Необязательно" },
-            ]}
+            fields={departmentFields()}
           />
         }
       />

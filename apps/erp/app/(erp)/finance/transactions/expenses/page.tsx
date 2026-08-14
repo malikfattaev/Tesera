@@ -6,6 +6,8 @@ import { formatDate, isoDate, money, today } from "@/src/tesera/format";
 import { filterByRange, resolveRange } from "@/src/tesera/range";
 import { AddRecord } from "@/src/ui/AddRecord";
 import { DateRangeFilter } from "@/src/ui/DateRangeFilter";
+import type { FormFieldSpec } from "@/src/ui/RecordForm";
+import { RowActions } from "@/src/ui/RowActions";
 
 export default async function ExpensesPage({
   searchParams,
@@ -27,6 +29,49 @@ export default async function ExpensesPage({
   const categoryName = (id?: string) =>
     id ? (categories.find((c) => c.id === id)?.name ?? "—") : "—";
 
+  const expenseFields = (tx?: (typeof rows)[number]): FormFieldSpec[] => [
+    {
+      name: "date",
+      label: "Дата",
+      type: "date",
+      defaultValue: tx ? isoDate(new Date(tx.date)) : today(),
+      required: true,
+    },
+    {
+      name: "amount",
+      label: "Сумма",
+      type: "number",
+      step: "1000",
+      placeholder: "0",
+      required: true,
+      defaultValue: tx ? String(tx.amount) : undefined,
+    },
+    {
+      name: "categoryId",
+      label: "Категория",
+      type: "select",
+      required: true,
+      defaultValue: tx?.categoryId,
+      options: categories
+        .filter((c) => c.direction === "out")
+        .map((c) => ({ value: c.id, label: c.name })),
+    },
+    {
+      name: "accountId",
+      label: "Счёт списания",
+      type: "select",
+      required: true,
+      defaultValue: tx?.accountId,
+      options: accounts.map((a) => ({ value: a.id, label: a.name })),
+    },
+    {
+      name: "note",
+      label: "Комментарий",
+      placeholder: "Необязательно",
+      defaultValue: tx?.note,
+    },
+  ];
+
   const columns: Column<(typeof rows)[number]>[] = [
     { key: "date", header: "Дата", render: (t) => formatDate(t.date) },
     { key: "category", header: "Категория", render: (t) => categoryName(t.categoryId) },
@@ -37,6 +82,27 @@ export default async function ExpensesPage({
       header: "Сумма",
       align: "right",
       render: (t) => <span className="font-medium text-ink">−{money(t.amount)}</span>,
+    },
+    {
+      key: "actions",
+      header: "Действия",
+      align: "right",
+      className: "w-28",
+      render: (t) => (
+        <RowActions
+          entity="transaction"
+          id={t.id}
+          title={`Расход от ${formatDate(t.date)}`}
+          fields={expenseFields(t)}
+          details={[
+            { label: "Дата", value: formatDate(t.date) },
+            { label: "Сумма", value: money(t.amount) },
+            { label: "Категория", value: categoryName(t.categoryId) },
+            { label: "Счёт", value: accountName(t.accountId) },
+            { label: "Комментарий", value: t.note ?? "—" },
+          ]}
+        />
+      ),
     },
   ];
 
@@ -52,27 +118,7 @@ export default async function ExpensesPage({
           label="Новый расход"
           action={createExpense}
           submitLabel="Добавить расход"
-          fields={[
-            { name: "date", label: "Дата", type: "date", defaultValue: today(), required: true },
-            { name: "amount", label: "Сумма", type: "number", step: "1000", placeholder: "0", required: true },
-            {
-              name: "categoryId",
-              label: "Категория",
-              type: "select",
-              required: true,
-              options: categories
-                .filter((c) => c.direction === "out")
-                .map((c) => ({ value: c.id, label: c.name })),
-            },
-            {
-              name: "accountId",
-              label: "Счёт списания",
-              type: "select",
-              required: true,
-              options: accounts.map((a) => ({ value: a.id, label: a.name })),
-            },
-            { name: "note", label: "Комментарий", placeholder: "Необязательно" },
-          ]}
+          fields={expenseFields()}
         />
       </div>
 

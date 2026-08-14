@@ -10,7 +10,6 @@ export const Counterparty = defineEntity({
     kind: t.enum(["client", "supplier", "partner"]).default("client").label("Тип"),
     phone: t.string().optional().label("Телефон"),
     email: t.string().optional().label("Email"),
-    note: t.string().optional().label("Заметка"),
   },
 });
 

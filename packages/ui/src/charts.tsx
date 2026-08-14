@@ -41,9 +41,12 @@ export interface BarDatum {
 export function BarChart({
   data,
   height = 260,
+  valueLabel = "Сумма",
 }: {
   data: BarDatum[];
   height?: number;
+  /** Series name shown in the tooltip. */
+  valueLabel?: string;
 }) {
   return (
     <div style={{ width: "100%", height }}>
@@ -71,6 +74,7 @@ export function BarChart({
               leave the bars stuck at zero height. */}
           <Bar
             dataKey="value"
+            name={valueLabel}
             fill={BRAND}
             radius={[6, 6, 0, 0]}
             maxBarSize={64}

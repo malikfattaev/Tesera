@@ -2,8 +2,10 @@ import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui"
 import { getApp } from "@/src/tesera/engine";
 import { Counterparty, PROJECT_STATUS_LABELS, Project } from "@/src/tesera/modules/projects";
 import { createProject } from "@/src/tesera/actions";
-import { formatDate, money } from "@/src/tesera/format";
+import { formatDate, isoDate, money } from "@/src/tesera/format";
 import { AddRecord } from "@/src/ui/AddRecord";
+import type { FormFieldSpec } from "@/src/ui/RecordForm";
+import { RowActions } from "@/src/ui/RowActions";
 
 const STATUS_TONES: Record<string, "brand" | "green" | "amber" | "neutral"> = {
   planning: "neutral",
@@ -24,6 +26,58 @@ export default async function ProjectsPage() {
   const activeCount = projects.filter((p) => p.status === "active").length;
   const totalBudget = projects.reduce((s, p) => s + p.budget, 0);
 
+  const projectFields = (project?: (typeof projects)[number]): FormFieldSpec[] => [
+    {
+      name: "name",
+      label: "Название",
+      placeholder: "Название проекта",
+      required: true,
+      defaultValue: project?.name,
+    },
+    {
+      name: "counterpartyId",
+      label: "Контрагент",
+      type: "select",
+      defaultValue: project?.counterpartyId ?? "",
+      options: [
+        { value: "", label: "Без контрагента" },
+        ...counterparties.map((c) => ({ value: c.id, label: c.name })),
+      ],
+    },
+    {
+      name: "status",
+      label: "Статус",
+      type: "select",
+      defaultValue: project?.status ?? "planning",
+      options: [
+        { value: "planning", label: "Планирование" },
+        { value: "active", label: "В работе" },
+        { value: "on_hold", label: "На паузе" },
+        { value: "done", label: "Завершён" },
+      ],
+    },
+    {
+      name: "budget",
+      label: "Бюджет",
+      type: "number",
+      step: "1000000",
+      placeholder: "0",
+      defaultValue: project ? String(project.budget) : undefined,
+    },
+    {
+      name: "lead",
+      label: "Ответственный",
+      placeholder: "Имя",
+      defaultValue: project?.lead,
+    },
+    {
+      name: "deadline",
+      label: "Дедлайн",
+      type: "date",
+      defaultValue: project?.deadline ? isoDate(new Date(project.deadline)) : undefined,
+    },
+  ];
+
   const columns: Column<(typeof projects)[number]>[] = [
     {
       key: "name",
@@ -43,6 +97,28 @@ export default async function ProjectsPage() {
     { key: "lead", header: "Ответственный", render: (p) => p.lead ?? "—" },
     { key: "deadline", header: "Дедлайн", render: (p) => (p.deadline ? formatDate(p.deadline) : "—") },
     { key: "budget", header: "Бюджет", align: "right", render: (p) => money(p.budget) },
+    {
+      key: "actions",
+      header: "Действия",
+      align: "right",
+      className: "w-28",
+      render: (p) => (
+        <RowActions
+          entity="project"
+          id={p.id}
+          title={p.name}
+          fields={projectFields(p)}
+          details={[
+            { label: "Проект", value: p.name },
+            { label: "Контрагент", value: clientName(p.counterpartyId) },
+            { label: "Статус", value: PROJECT_STATUS_LABELS[p.status] ?? p.status },
+            { label: "Ответственный", value: p.lead ?? "—" },
+            { label: "Дедлайн", value: p.deadline ? formatDate(p.deadline) : "—" },
+            { label: "Бюджет", value: money(p.budget) },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -56,33 +132,7 @@ export default async function ProjectsPage() {
             action={createProject}
             submitLabel="Добавить проект"
             label="Новый проект"
-            fields={[
-              { name: "name", label: "Название", placeholder: "Название проекта", required: true },
-              {
-                name: "counterpartyId",
-                label: "Контрагент",
-                type: "select",
-                options: [
-                  { value: "", label: "Без контрагента" },
-                  ...counterparties.map((c) => ({ value: c.id, label: c.name })),
-                ],
-              },
-              {
-                name: "status",
-                label: "Статус",
-                type: "select",
-                defaultValue: "planning",
-                options: [
-                  { value: "planning", label: "Планирование" },
-                  { value: "active", label: "В работе" },
-                  { value: "on_hold", label: "На паузе" },
-                  { value: "done", label: "Завершён" },
-                ],
-              },
-              { name: "budget", label: "Бюджет", type: "number", step: "1000000", placeholder: "0" },
-              { name: "lead", label: "Ответственный", placeholder: "Имя" },
-              { name: "deadline", label: "Дедлайн", type: "date" },
-            ]}
+            fields={projectFields()}
           />
         }
       />

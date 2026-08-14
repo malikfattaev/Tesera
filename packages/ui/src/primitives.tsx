@@ -111,12 +111,13 @@ export function Button({
   variant = "primary",
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "outline" | "ghost";
+  variant?: "primary" | "outline" | "ghost" | "danger";
 }) {
   const styles = {
     primary: "bg-[#7c3aed] text-white hover:bg-[#6d28d9] shadow-sm",
     outline: "border border-slate-200 bg-white text-ink hover:bg-slate-50",
     ghost: "text-slate-600 hover:bg-slate-100",
+    danger: "bg-rose-600 text-white hover:bg-rose-700 shadow-sm",
   }[variant];
   return (
     <button

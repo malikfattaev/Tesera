@@ -3,6 +3,8 @@ import { getApp } from "@/src/tesera/engine";
 import { Department, Employee, Position } from "@/src/tesera/modules/people";
 import { createPosition } from "@/src/tesera/actions";
 import { AddRecord } from "@/src/ui/AddRecord";
+import type { FormFieldSpec } from "@/src/ui/RecordForm";
+import { RowActions } from "@/src/ui/RowActions";
 
 export default async function PositionsPage() {
   const app = await getApp();
@@ -17,6 +19,26 @@ export default async function PositionsPage() {
   const headcount = (positionId: string) =>
     employees.filter((e) => e.positionId === positionId).length;
 
+  const positionFields = (position?: (typeof positions)[number]): FormFieldSpec[] => [
+    {
+      name: "name",
+      label: "Название",
+      placeholder: "Например, Designer",
+      required: true,
+      defaultValue: position?.name,
+    },
+    {
+      name: "departmentId",
+      label: "Отдел",
+      type: "select",
+      defaultValue: position?.departmentId ?? "",
+      options: [
+        { value: "", label: "Без отдела" },
+        ...departments.map((d) => ({ value: d.id, label: d.name })),
+      ],
+    },
+  ];
+
   const columns: Column<(typeof positions)[number]>[] = [
     {
       key: "name",
@@ -25,6 +47,25 @@ export default async function PositionsPage() {
     },
     { key: "department", header: "Отдел", render: (p) => departmentName(p.departmentId) },
     { key: "headcount", header: "Сотрудников", align: "right", render: (p) => headcount(p.id) },
+    {
+      key: "actions",
+      header: "Действия",
+      align: "right",
+      className: "w-28",
+      render: (p) => (
+        <RowActions
+          entity="position"
+          id={p.id}
+          title={p.name}
+          fields={positionFields(p)}
+          details={[
+            { label: "Должность", value: p.name },
+            { label: "Отдел", value: departmentName(p.departmentId) },
+            { label: "Сотрудников", value: String(headcount(p.id)) },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -38,19 +79,7 @@ export default async function PositionsPage() {
             action={createPosition}
             submitLabel="Добавить должность"
             label="Новая должность"
-            fields={[
-              { name: "name", label: "Название", placeholder: "Например, Designer", required: true },
-              {
-                name: "departmentId",
-                label: "Отдел",
-                type: "select",
-                options: [
-                  { value: "", label: "Без отдела" },
-                  ...departments.map((d) => ({ value: d.id, label: d.name })),
-                ],
-              },
-              { name: "note", label: "Заметка", placeholder: "Необязательно" },
-            ]}
+            fields={positionFields()}
           />
         }
       />

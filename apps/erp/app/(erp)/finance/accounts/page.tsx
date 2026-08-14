@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Account, ACCOUNT_KIND_LABELS, Transaction } from "@/src/tesera/modules/finance";
@@ -7,12 +6,51 @@ import { createAccount } from "@/src/tesera/actions";
 import { balancesByAccount } from "@/src/tesera/finance-calc";
 import { money, signedMoney } from "@/src/tesera/format";
 import { AddRecord } from "@/src/ui/AddRecord";
+import type { FormFieldSpec } from "@/src/ui/RecordForm";
+import { RowActions } from "@/src/ui/RowActions";
 
 const KIND_TONES: Record<string, "brand" | "green" | "amber"> = {
   bank: "brand",
   cash: "green",
   card: "amber",
 };
+
+/** One field spec, used by both the create dialog and the edit dialog. */
+const accountFields = (account?: {
+  name: string;
+  kind: string;
+  currency: string;
+}): FormFieldSpec[] => [
+  {
+    name: "name",
+    label: "Название",
+    placeholder: "Например, Карта",
+    required: true,
+    defaultValue: account?.name,
+  },
+  {
+    name: "kind",
+    label: "Тип",
+    type: "select",
+    defaultValue: account?.kind ?? "bank",
+    options: [
+      { value: "bank", label: "Банк" },
+      { value: "cash", label: "Касса" },
+      { value: "card", label: "Карта" },
+    ],
+  },
+  {
+    name: "currency",
+    label: "Валюта",
+    type: "select",
+    defaultValue: account?.currency ?? "UZS",
+    options: [
+      { value: "UZS", label: "UZS" },
+      { value: "USD", label: "USD" },
+      { value: "EUR", label: "EUR" },
+    ],
+  },
+];
 
 export default async function AccountsPage() {
   const app = await getApp();
@@ -66,11 +104,19 @@ export default async function AccountsPage() {
       },
     },
     {
-      key: "chevron",
-      header: "",
+      key: "actions",
+      header: "Действия",
       align: "right",
-      className: "w-10",
-      render: () => <ChevronRight className="ml-auto h-4 w-4 text-slate-300" />,
+      className: "w-28",
+      render: (a) => (
+        <RowActions
+          entity="account"
+          id={a.id}
+          title={a.name}
+          viewHref={`/finance/accounts/${a.id}`}
+          fields={accountFields(a)}
+        />
+      ),
     },
   ];
 
@@ -85,31 +131,7 @@ export default async function AccountsPage() {
             action={createAccount}
             submitLabel="Добавить счёт"
             label="Новый счёт"
-            fields={[
-              { name: "name", label: "Название", placeholder: "Например, Карта", required: true },
-              {
-                name: "kind",
-                label: "Тип",
-                type: "select",
-                defaultValue: "bank",
-                options: [
-                  { value: "bank", label: "Банк" },
-                  { value: "cash", label: "Касса" },
-                  { value: "card", label: "Карта" },
-                ],
-              },
-              {
-                name: "currency",
-                label: "Валюта",
-                type: "select",
-                defaultValue: "UZS",
-                options: [
-                  { value: "UZS", label: "UZS" },
-                  { value: "USD", label: "USD" },
-                  { value: "EUR", label: "EUR" },
-                ],
-              },
-            ]}
+            fields={accountFields()}
           />
         }
       />

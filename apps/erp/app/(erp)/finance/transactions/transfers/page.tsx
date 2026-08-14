@@ -7,6 +7,8 @@ import { formatDate, isoDate, money, today } from "@/src/tesera/format";
 import { filterByRange, resolveRange } from "@/src/tesera/range";
 import { AddRecord } from "@/src/ui/AddRecord";
 import { DateRangeFilter } from "@/src/ui/DateRangeFilter";
+import type { FormFieldSpec } from "@/src/ui/RecordForm";
+import { RowActions } from "@/src/ui/RowActions";
 
 export default async function TransfersPage({
   searchParams,
@@ -25,6 +27,47 @@ export default async function TransfersPage({
 
   const accountName = (id?: string) =>
     id ? (accounts.find((a) => a.id === id)?.name ?? "—") : "—";
+
+  const transferFields = (tx?: (typeof rows)[number]): FormFieldSpec[] => [
+    {
+      name: "date",
+      label: "Дата",
+      type: "date",
+      defaultValue: tx ? isoDate(new Date(tx.date)) : today(),
+      required: true,
+    },
+    {
+      name: "amount",
+      label: "Сумма",
+      type: "number",
+      step: "1000",
+      placeholder: "0",
+      required: true,
+      defaultValue: tx ? String(tx.amount) : undefined,
+    },
+    {
+      name: "accountId",
+      label: "Счёт списания",
+      type: "select",
+      required: true,
+      defaultValue: tx?.accountId,
+      options: accounts.map((a) => ({ value: a.id, label: a.name })),
+    },
+    {
+      name: "toAccountId",
+      label: "Счёт зачисления",
+      type: "select",
+      required: true,
+      defaultValue: tx?.toAccountId ?? accounts[1]?.id,
+      options: accounts.map((a) => ({ value: a.id, label: a.name })),
+    },
+    {
+      name: "note",
+      label: "Комментарий",
+      placeholder: "Необязательно",
+      defaultValue: tx?.note,
+    },
+  ];
 
   const columns: Column<(typeof rows)[number]>[] = [
     { key: "date", header: "Дата", render: (t) => formatDate(t.date) },
@@ -46,6 +89,27 @@ export default async function TransfersPage({
       align: "right",
       render: (t) => <span className="font-medium text-ink">{money(t.amount)}</span>,
     },
+    {
+      key: "actions",
+      header: "Действия",
+      align: "right",
+      className: "w-28",
+      render: (t) => (
+        <RowActions
+          entity="transaction"
+          id={t.id}
+          title={`Перевод от ${formatDate(t.date)}`}
+          fields={transferFields(t)}
+          details={[
+            { label: "Дата", value: formatDate(t.date) },
+            { label: "Сумма", value: money(t.amount) },
+            { label: "Счёт списания", value: accountName(t.accountId) },
+            { label: "Счёт зачисления", value: accountName(t.toAccountId) },
+            { label: "Комментарий", value: t.note ?? "—" },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -60,26 +124,7 @@ export default async function TransfersPage({
           label="Новый перевод"
           action={createTransfer}
           submitLabel="Добавить перевод"
-          fields={[
-            { name: "date", label: "Дата", type: "date", defaultValue: today(), required: true },
-            { name: "amount", label: "Сумма", type: "number", step: "1000", placeholder: "0", required: true },
-            {
-              name: "accountId",
-              label: "Счёт списания",
-              type: "select",
-              required: true,
-              options: accounts.map((a) => ({ value: a.id, label: a.name })),
-            },
-            {
-              name: "toAccountId",
-              label: "Счёт зачисления",
-              type: "select",
-              required: true,
-              defaultValue: accounts[1]?.id,
-              options: accounts.map((a) => ({ value: a.id, label: a.name })),
-            },
-            { name: "note", label: "Комментарий", placeholder: "Необязательно" },
-          ]}
+          fields={transferFields()}
         />
       </div>
 
