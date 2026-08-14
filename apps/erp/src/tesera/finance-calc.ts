@@ -35,6 +35,21 @@ export function balancesByAccount(txs: TxLike[]): Map<string, number> {
 }
 
 /**
+ * Turnover per account: money that came in. Only receipts count, spending does
+ * not reduce it, so it shows how much passed through an account over time.
+ */
+export function turnoverByAccount(txs: TxLike[]): Map<string, number> {
+  const turnover = new Map<string, number>();
+  const add = (id: string, amount: number) =>
+    turnover.set(id, (turnover.get(id) ?? 0) + amount);
+  for (const tx of txs) {
+    if (tx.direction === "in") add(tx.accountId, tx.amount);
+    else if (tx.direction === "transfer" && tx.toAccountId) add(tx.toAccountId, tx.amount);
+  }
+  return turnover;
+}
+
+/**
  * Income / expense totals. Transfers are deliberately excluded: moving money
  * between own accounts is neither income nor spending.
  */

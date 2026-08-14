@@ -3,7 +3,7 @@ import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui"
 import { getApp } from "@/src/tesera/engine";
 import { Account, ACCOUNT_KIND_LABELS, Transaction } from "@/src/tesera/modules/finance";
 import { createAccount } from "@/src/tesera/actions";
-import { balancesByAccount } from "@/src/tesera/finance-calc";
+import { balancesByAccount, turnoverByAccount } from "@/src/tesera/finance-calc";
 import { money, signedMoney } from "@/src/tesera/format";
 import { AddRecord } from "@/src/ui/AddRecord";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
@@ -60,10 +60,12 @@ export default async function AccountsPage() {
   ]);
 
   const balance = balancesByAccount(txs);
+  const turnover = turnoverByAccount(txs);
   const operations = (id: string) =>
     txs.filter((t) => t.accountId === id || t.toAccountId === id).length;
 
   const total = accounts.reduce((sum, a) => sum + (balance.get(a.id) ?? 0), 0);
+  const totalTurnover = accounts.reduce((sum, a) => sum + (turnover.get(a.id) ?? 0), 0);
 
   const columns: Column<(typeof accounts)[number]>[] = [
     {
@@ -91,8 +93,14 @@ export default async function AccountsPage() {
     { key: "currency", header: "Валюта", render: (a) => a.currency },
     { key: "operations", header: "Операций", align: "right", render: (a) => operations(a.id) },
     {
+      key: "turnover",
+      header: "Оборот",
+      align: "right",
+      render: (a) => <span className="text-slate-500">{money(turnover.get(a.id) ?? 0)}</span>,
+    },
+    {
       key: "balance",
-      header: "Остаток",
+      header: "Баланс",
       align: "right",
       render: (a) => {
         const value = balance.get(a.id) ?? 0;
@@ -136,14 +144,16 @@ export default async function AccountsPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Счетов" value={accounts.length} />
-        <StatCard label="Всего операций" value={txs.length} />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Общий остаток"
+          label="Баланс"
           value={signedMoney(total)}
+          hint="Сумма остатков по всем счетам"
           tone={total < 0 ? "negative" : "positive"}
         />
+        <StatCard label="Оборот" value={money(totalTurnover)} hint="Все поступления за всё время" />
+        <StatCard label="Счетов" value={accounts.length} />
+        <StatCard label="Всего операций" value={txs.length} />
       </div>
 
       <div className="mt-6">

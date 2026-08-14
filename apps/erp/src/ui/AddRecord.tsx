@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button, Modal } from "@tesera/ui";
+import type { ActionResult } from "@/src/tesera/action-result";
 import { RecordForm, type FormFieldSpec } from "./RecordForm";
 
 /**
@@ -17,7 +18,7 @@ export function AddRecord({
   label = "Добавить",
 }: {
   title: string;
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<ActionResult | void>;
   fields: FormFieldSpec[];
   submitLabel: string;
   label?: string;

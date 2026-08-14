@@ -1,7 +1,10 @@
 "use server";
-import type { EntityModel } from "@tesera/core";
+import type { EntityModel, TeseraApp } from "@tesera/core";
 import { revalidatePath } from "next/cache";
+import type { ActionResult } from "./action-result";
 import { getApp, WEB_CONTEXT } from "./engine";
+import { balancesByAccount } from "./finance-calc";
+import { money } from "./format";
 import { valuesFromForm } from "./form-data";
 import { Account, Category, Transaction } from "./modules/finance";
 import { Department, Employee, Position } from "./modules/people";
@@ -39,6 +42,26 @@ function date(formData: FormData, key: string): Date | undefined {
   return value ? new Date(value) : undefined;
 }
 
+/**
+ * An account may not go below zero: spending and outgoing transfers are checked
+ * against what the account actually holds. `excludeTxId` leaves the edited
+ * operation out of the balance, so editing an existing one is measured against
+ * the state without it.
+ */
+async function insufficientFunds(
+  app: TeseraApp,
+  accountId: string,
+  amount: number,
+  excludeTxId?: string,
+): Promise<string | null> {
+  const txs = (await app.repo(Transaction).list()).filter((t) => t.id !== excludeTxId);
+  const balance = balancesByAccount(txs).get(accountId) ?? 0;
+  if (balance - amount >= 0) return null;
+
+  const account = await app.repo(Account).findById(accountId);
+  return `Недостаточно средств на счёте «${account?.name ?? "счёт"}». Доступно ${money(balance)}, требуется ${money(amount)}.`;
+}
+
 // --- Общие действия над записями ---
 
 /** Update any registered entity from a form, field types taken from the model. */
@@ -46,11 +69,30 @@ export async function updateRecord(
   entity: string,
   id: string,
   formData: FormData,
-): Promise<void> {
+): Promise<ActionResult> {
   const app = await getApp();
   const model = modelFor(entity);
-  await app.repo(model).update(id, valuesFromForm(model, formData) as never, WEB_CONTEXT);
+  const values = valuesFromForm(model, formData);
+
+  // Editing an operation must respect the same balance rule as creating one.
+  if (entity === "transaction") {
+    const existing = await app.repo(Transaction).findById(id);
+    if (existing) {
+      const next = { ...existing, ...values } as {
+        direction: string;
+        amount: number;
+        accountId: string;
+      };
+      if (next.direction === "out" || next.direction === "transfer") {
+        const error = await insufficientFunds(app, next.accountId, next.amount, id);
+        if (error) return { ok: false, error };
+      }
+    }
+  }
+
+  await app.repo(model).update(id, values as never, WEB_CONTEXT);
   revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 /** Records that point at `id`, so nothing is silently orphaned on delete. */
@@ -140,20 +182,27 @@ function revalidateMoney(): void {
 }
 
 /** Расход: money leaves an account. Expenses carry no counterparty. */
-export async function createExpense(formData: FormData): Promise<void> {
+export async function createExpense(formData: FormData): Promise<ActionResult> {
   const app = await getApp();
+  const accountId = text(formData, "accountId");
+  const amount = Number(formData.get("amount") ?? 0);
+
+  const error = await insufficientFunds(app, accountId, amount);
+  if (error) return { ok: false, error };
+
   await app.repo(Transaction).create(
     {
       date: date(formData, "date") ?? new Date(),
       direction: "out",
-      amount: Number(formData.get("amount") ?? 0),
+      amount,
       categoryId: text(formData, "categoryId"),
-      accountId: text(formData, "accountId"),
+      accountId,
       note: optionalText(formData, "note"),
     },
     WEB_CONTEXT,
   );
   revalidateMoney();
+  return { ok: true };
 }
 
 /** Доход: money arrives, optionally attributed to a counterparty. */
@@ -175,18 +224,23 @@ export async function createIncome(formData: FormData): Promise<void> {
 }
 
 /** Перевод: money moves between two own accounts. */
-export async function createTransfer(formData: FormData): Promise<void> {
+export async function createTransfer(formData: FormData): Promise<ActionResult> {
   const app = await getApp();
   const accountId = text(formData, "accountId");
   const toAccountId = text(formData, "toAccountId");
+  const amount = Number(formData.get("amount") ?? 0);
+
   if (accountId === toAccountId) {
-    throw new Error("Счёт списания и счёт зачисления должны отличаться");
+    return { ok: false, error: "Счёт списания и счёт зачисления должны отличаться." };
   }
+  const error = await insufficientFunds(app, accountId, amount);
+  if (error) return { ok: false, error };
+
   await app.repo(Transaction).create(
     {
       date: date(formData, "date") ?? new Date(),
       direction: "transfer",
-      amount: Number(formData.get("amount") ?? 0),
+      amount,
       accountId,
       toAccountId,
       note: optionalText(formData, "note"),
@@ -194,6 +248,7 @@ export async function createTransfer(formData: FormData): Promise<void> {
     WEB_CONTEXT,
   );
   revalidateMoney();
+  return { ok: true };
 }
 
 // --- Люди ---

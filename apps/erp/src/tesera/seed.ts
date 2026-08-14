@@ -27,6 +27,7 @@ export async function seed(app: TeseraApp): Promise<void> {
     app.repo(Category).create({ name, direction }, SYS);
 
   const sales = await cat("Продажи", "in");
+  const other = await cat("Прочие поступления", "in");
   const salary = await cat("ФОТ (зарплата)", "out");
   const office = await cat("Офисные расходы", "out");
   await cat("Налоги", "out");
@@ -62,6 +63,19 @@ export async function seed(app: TeseraApp): Promise<void> {
       { date: new Date(date), direction: "transfer", amount, accountId: from, toAccountId: to, note },
       SYS,
     );
+
+  // Opening balance first: an account may never go negative.
+  await app.repo(Transaction).create(
+    {
+      date: new Date("2026-01-10"),
+      direction: "in",
+      amount: 30_000_000,
+      categoryId: other.id,
+      accountId: main.id,
+      note: "Остаток на начало года",
+    },
+    SYS,
+  );
 
   await expense("2026-03-10", 9_000_000, salary.id, main.id, "Зарплаты март");
   await income("2026-08-05", 10_000_000, sales.id, main.id, romashka.id, "Оплата по договору");
