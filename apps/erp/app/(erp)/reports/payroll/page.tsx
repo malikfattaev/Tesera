@@ -1,6 +1,6 @@
 import { PageHeader, ReportTable, StatCard, type ReportRow } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
-import { Department, Employee, Position } from "@/src/tesera/modules/people";
+import { Employee } from "@/src/tesera/modules/people";
 import { money } from "@/src/tesera/format";
 import { resolveRange } from "@/src/tesera/range";
 import { monthColumns, periodLabel } from "@/src/tesera/report";
@@ -12,18 +12,15 @@ export default async function PayrollReportPage({
   searchParams: { period?: string; from?: string; to?: string };
 }) {
   const app = await getApp();
-  const [employees, positions, departments] = await Promise.all([
-    app.repo(Employee).list({ orderBy: { field: "fullName", direction: "asc" } }),
-    app.repo(Position).list(),
-    app.repo(Department).list({ orderBy: { field: "name", direction: "asc" } }),
-  ]);
+  const employees = await app
+    .repo(Employee)
+    .list({ orderBy: { field: "fullName", direction: "asc" } });
 
   const range = resolveRange(searchParams);
   const active = employees.filter((e) => e.active);
   // With no explicit range, show the current year of payroll.
   const yearStart = new Date(new Date().getFullYear(), 0, 1);
   const columns = monthColumns(range, [yearStart, new Date()]);
-  const positionName = (id: string) => positions.find((p) => p.id === id)?.name ?? "—";
 
   /** Accrual per month: the salary applies from the month the person was hired. */
   const accrualFor = (employee: (typeof active)[number]) => {
@@ -41,45 +38,17 @@ export default async function PayrollReportPage({
     total: rows.reduce((s, r) => s + r.total, 0),
   });
 
-  const rows: ReportRow[] = [];
-  const departmentTotals: { values: number[]; total: number }[] = [];
+  // Flat payroll sheet: one line per person, then the bottom line.
+  const accruals = active.map((employee) => accrualFor(employee));
+  const rows: ReportRow[] = active.map((employee, index) => ({
+    id: employee.id,
+    label: employee.fullName,
+    kind: "item",
+    values: accruals[index]!.values,
+    total: accruals[index]!.total,
+  }));
 
-  for (const department of departments) {
-    const staff = active.filter((e) => e.departmentId === department.id);
-    if (!staff.length) continue;
-
-    rows.push({
-      id: `dep-${department.id}`,
-      label: department.name,
-      kind: "section",
-      values: columns.map(() => 0),
-      total: 0,
-    });
-
-    const staffRows = staff.map((employee) => {
-      const accrual = accrualFor(employee);
-      rows.push({
-        id: employee.id,
-        label: `${employee.fullName}, ${positionName(employee.positionId)}`,
-        kind: "item",
-        values: accrual.values,
-        total: accrual.total,
-      });
-      return accrual;
-    });
-
-    const subtotal = sumRows(staffRows);
-    departmentTotals.push(subtotal);
-    rows.push({
-      id: `sub-${department.id}`,
-      label: `Итого ${department.name.toLowerCase()}`,
-      kind: "subtotal",
-      values: subtotal.values,
-      total: subtotal.total,
-    });
-  }
-
-  const grand = sumRows(departmentTotals);
+  const grand = sumRows(accruals);
   rows.push({
     id: "total",
     label: "Итого ФОТ",
@@ -92,9 +61,9 @@ export default async function PayrollReportPage({
 
   return (
     <>
-      <PageHeader title="Зарплатные ведомости" subtitle="Начисления по сотрудникам и отделам" />
+      <PageHeader title="Зарплатные ведомости" subtitle="Начисления по сотрудникам за период" />
 
-      <ReportPeriod period={periodLabel(columns)} />
+      <ReportPeriod range={range} />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Активных сотрудников" value={active.length} />
@@ -106,6 +75,8 @@ export default async function PayrollReportPage({
         columns={columns}
         rows={rows}
         rowHeader="Сотрудник"
+        title="Зарплатная ведомость"
+        period={periodLabel(columns)}
         caption="Суммы в UZS. Начисления рассчитаны по текущему окладу с месяца приёма на работу."
       />
     </>

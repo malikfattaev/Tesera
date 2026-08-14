@@ -2,7 +2,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, X } from "lucide-react";
 import { cn } from "@tesera/ui";
-import { RANGE_PRESETS, type RangeKey } from "@/src/tesera/range";
+import { DEFAULT_PRESET, RANGE_PRESETS, type RangeKey } from "@/src/tesera/range";
 
 /**
  * Period picker used by operations and reports. Presets cover the common
@@ -10,11 +10,18 @@ import { RANGE_PRESETS, type RangeKey } from "@/src/tesera/range";
  * else. State lives in the URL, so the server components re-render filtered and
  * the view stays shareable and back-button friendly.
  */
-export function DateRangeFilter() {
+export function DateRangeFilter({
+  resolvedFrom,
+  resolvedTo,
+}: {
+  /** Dates the active preset resolves to, shown in the inputs for clarity. */
+  resolvedFrom?: string;
+  resolvedTo?: string;
+} = {}) {
   const router = useRouter();
   const params = useSearchParams();
 
-  const period = (params.get("period") ?? "all") as RangeKey;
+  const period = (params.get("period") ?? DEFAULT_PRESET) as RangeKey;
   const from = params.get("from") ?? "";
   const to = params.get("to") ?? "";
   const custom = Boolean(from || to);
@@ -58,16 +65,16 @@ export function DateRangeFilter() {
         <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
         <input
           type="date"
-          value={from}
+          value={from || resolvedFrom || ""}
           onChange={(event) => apply({ from: event.target.value, period: "" })}
-          className="w-[128px] bg-transparent text-sm text-ink outline-none"
+          className="w-[128px] bg-transparent text-sm font-medium text-ink outline-none"
         />
-        <span className="text-slate-300">→</span>
+        <span className="text-slate-400">→</span>
         <input
           type="date"
-          value={to}
+          value={to || resolvedTo || ""}
           onChange={(event) => apply({ to: event.target.value, period: "" })}
-          className="w-[128px] bg-transparent text-sm text-ink outline-none"
+          className="w-[128px] bg-transparent text-sm font-medium text-ink outline-none"
         />
         {custom && (
           <button

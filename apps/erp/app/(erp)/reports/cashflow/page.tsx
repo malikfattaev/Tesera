@@ -101,7 +101,7 @@ export default async function CashflowReportPage({
     <>
       <PageHeader title="Движения по деньгам" subtitle="Доходы и расходы по категориям и месяцам" />
 
-      <ReportPeriod period={periodLabel(columns)} />
+      <ReportPeriod range={range} />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Доходы за период" value={money(income)} tone="positive" />
@@ -113,6 +113,8 @@ export default async function CashflowReportPage({
         columns={columns}
         rows={rows}
         rowHeader="Категория"
+        title="Отчёт о движении денег"
+        period={periodLabel(columns)}
         caption="Суммы в UZS. Переводы между своими счетами в отчёт не входят."
       />
     </>

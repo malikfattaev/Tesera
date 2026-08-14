@@ -3,7 +3,7 @@ import { getApp } from "@/src/tesera/engine";
 import { Account, Category, Transaction } from "@/src/tesera/modules/finance";
 import { Counterparty } from "@/src/tesera/modules/projects";
 import { createIncome } from "@/src/tesera/actions";
-import { formatDate, money, today } from "@/src/tesera/format";
+import { formatDate, isoDate, money, today } from "@/src/tesera/format";
 import { filterByRange, resolveRange } from "@/src/tesera/range";
 import { AddRecord } from "@/src/ui/AddRecord";
 import { DateRangeFilter } from "@/src/ui/DateRangeFilter";
@@ -47,7 +47,10 @@ export default async function IncomePage({
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <DateRangeFilter />
+        <DateRangeFilter
+          resolvedFrom={range.from ? isoDate(range.from) : undefined}
+          resolvedTo={range.to ? isoDate(range.to) : undefined}
+        />
         <AddRecord
           title="Новый доход"
           label="Новый доход"

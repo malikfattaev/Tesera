@@ -3,7 +3,7 @@ import { DataTable, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Account, Transaction } from "@/src/tesera/modules/finance";
 import { createTransfer } from "@/src/tesera/actions";
-import { formatDate, money, today } from "@/src/tesera/format";
+import { formatDate, isoDate, money, today } from "@/src/tesera/format";
 import { filterByRange, resolveRange } from "@/src/tesera/range";
 import { AddRecord } from "@/src/ui/AddRecord";
 import { DateRangeFilter } from "@/src/ui/DateRangeFilter";
@@ -51,7 +51,10 @@ export default async function TransfersPage({
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <DateRangeFilter />
+        <DateRangeFilter
+          resolvedFrom={range.from ? isoDate(range.from) : undefined}
+          resolvedTo={range.to ? isoDate(range.to) : undefined}
+        />
         <AddRecord
           title="Новый перевод"
           label="Новый перевод"

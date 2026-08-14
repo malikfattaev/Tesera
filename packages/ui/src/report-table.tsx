@@ -21,113 +21,136 @@ export interface ReportRow {
 }
 
 function formatAmount(value: number): string {
-  return new Intl.NumberFormat("ru-RU", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 }
 
 /**
  * A period report laid out as a matrix: named rows down the side, periods
- * across the top, and a trailing total. Rows carry a kind so sections,
- * subtotals and the bottom line read differently without callers styling
- * anything. The first column sticks while the periods scroll sideways.
+ * across the top, a trailing total. Both the row name and the total stay pinned
+ * while the months scroll, so a wide report never loses its context. Rows carry
+ * a kind, so sections, subtotals and the bottom line read differently without
+ * callers styling anything.
  */
 export function ReportTable({
   columns,
   rows,
   rowHeader,
+  title,
+  period,
   caption,
 }: {
   columns: ReportColumn[];
   rows: ReportRow[];
-  /** Header text for the sticky first column. */
+  /** Header text for the pinned first column. */
   rowHeader: string;
+  /** Report name, shown above the table. */
+  title?: ReactNode;
+  /** Period description, shown under the title. */
+  period?: ReactNode;
   /** Small note under the table, e.g. the currency. */
   caption?: ReactNode;
 }) {
-  const cellTone = (row: ReportRow, value: number) => {
+  /** Opaque background per row: sticky cells must not let content show through. */
+  const rowBg = (row: ReportRow) => {
+    if (row.kind === "section") {
+      return row.tone === "income"
+        ? "bg-emerald-100"
+        : row.tone === "expense"
+          ? "bg-rose-100"
+          : "bg-slate-200";
+    }
+    if (row.kind === "subtotal") return "bg-slate-100";
+    if (row.kind === "total") return "bg-brand-50";
+    return "bg-white";
+  };
+
+  const valueClass = (row: ReportRow, value: number) => {
+    if (row.kind === "section") return "text-transparent";
     if (value === 0) return "text-slate-300";
-    if (row.tone === "income" || (row.kind === "total" && value > 0)) return "text-emerald-600";
-    if (row.kind === "total" && value < 0) return "text-rose-600";
-    return "text-slate-700";
-  };
-
-  const rowClass = (row: ReportRow) => {
-    if (row.kind === "section") {
-      return row.tone === "income"
-        ? "bg-emerald-50/70 text-emerald-700"
-        : row.tone === "expense"
-          ? "bg-rose-50/70 text-rose-700"
-          : "bg-slate-50 text-slate-600";
-    }
-    if (row.kind === "subtotal") {
-      return row.tone === "income" ? "bg-emerald-50/40 font-medium" : "bg-slate-50 font-medium";
-    }
-    if (row.kind === "total") return "border-t-2 border-slate-200 bg-white font-semibold";
-    return "bg-white";
-  };
-
-  const stickyBg = (row: ReportRow) => {
-    if (row.kind === "section") {
-      return row.tone === "income"
-        ? "bg-emerald-50"
-        : row.tone === "expense"
-          ? "bg-rose-50"
-          : "bg-slate-50";
-    }
-    if (row.kind === "subtotal") return row.tone === "income" ? "bg-emerald-50" : "bg-slate-50";
-    return "bg-white";
+    if (row.kind === "total") return value < 0 ? "text-rose-600" : "text-emerald-700";
+    if (row.tone === "income") return "text-emerald-700";
+    return "text-ink";
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-card">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+      {(title || period) && (
+        <div className="border-b border-slate-200 px-5 py-4">
+          {title && <h2 className="text-lg font-semibold text-ink">{title}</h2>}
+          {period && <p className="mt-0.5 text-sm text-slate-500">Период: {period}</p>}
+        </div>
+      )}
+
       <div className="overflow-x-auto">
-        <table className="w-full min-w-max border-collapse text-sm">
+        <table className="w-full min-w-max border-collapse text-[15px]">
           <thead>
-            <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
-              <th className="sticky left-0 z-10 bg-white px-4 py-3 text-left font-semibold">
+            <tr className="border-b-2 border-slate-200 bg-slate-50">
+              <th className="sticky left-0 z-20 border-r border-slate-200 bg-slate-50 px-5 py-3.5 text-left text-sm font-semibold text-slate-600">
                 {rowHeader}
               </th>
               {columns.map((column) => (
-                <th key={column.key} className="whitespace-nowrap px-4 py-3 text-right font-semibold">
+                <th
+                  key={column.key}
+                  className="whitespace-nowrap border-l border-slate-100 px-5 py-3.5 text-right text-sm font-semibold text-slate-600"
+                >
                   {column.label}
                 </th>
               ))}
-              <th className="whitespace-nowrap bg-slate-50/60 px-4 py-3 text-right font-semibold text-slate-500">
+              <th className="sticky right-0 z-20 border-l-2 border-slate-200 bg-slate-100 px-5 py-3.5 text-right text-sm font-bold text-ink">
                 Итого
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody>
             {rows.map((row) => (
-              <tr key={row.id} className={rowClass(row)}>
+              <tr
+                key={row.id}
+                className={cn(
+                  "border-b border-slate-100",
+                  rowBg(row),
+                  row.kind === "total" && "border-t-2 border-slate-300",
+                )}
+              >
                 <td
                   className={cn(
-                    "sticky left-0 z-10 whitespace-nowrap px-4 py-2.5",
-                    stickyBg(row),
-                    row.kind === "section" && "text-xs font-semibold uppercase tracking-wide",
-                    row.kind === "item" && "pl-8 text-slate-600",
-                    (row.kind === "subtotal" || row.kind === "total") && "text-ink",
+                    "sticky left-0 z-10 whitespace-nowrap border-r border-slate-200 px-5 py-3",
+                    rowBg(row),
+                    row.kind === "section" &&
+                      cn(
+                        "text-sm font-bold uppercase tracking-wide",
+                        row.tone === "income"
+                          ? "text-emerald-800"
+                          : row.tone === "expense"
+                            ? "text-rose-800"
+                            : "text-slate-700",
+                      ),
+                    row.kind === "item" && "pl-8 text-slate-700",
+                    row.kind === "subtotal" && "font-semibold text-ink",
+                    row.kind === "total" && "text-base font-bold text-ink",
                   )}
                 >
                   {row.label}
                 </td>
+
                 {row.values.map((value, index) => (
                   <td
                     key={columns[index]?.key ?? index}
                     className={cn(
-                      "whitespace-nowrap px-4 py-2.5 text-right tabular-nums",
-                      row.kind === "section" ? "text-transparent" : cellTone(row, value),
+                      "whitespace-nowrap border-l border-slate-100 px-5 py-3 text-right tabular-nums",
+                      valueClass(row, value),
+                      row.kind === "subtotal" && "font-semibold",
+                      row.kind === "total" && "font-bold",
                     )}
                   >
                     {row.kind === "section" ? "" : formatAmount(value)}
                   </td>
                 ))}
+
                 <td
                   className={cn(
-                    "whitespace-nowrap bg-slate-50/60 px-4 py-2.5 text-right font-medium tabular-nums",
-                    row.kind === "section" ? "text-transparent" : cellTone(row, row.total),
+                    "sticky right-0 z-10 whitespace-nowrap border-l-2 border-slate-200 px-5 py-3 text-right font-semibold tabular-nums",
+                    row.kind === "total" ? "bg-brand-50 text-base font-bold" : "bg-slate-50",
+                    valueClass(row, row.total),
                   )}
                 >
                   {row.kind === "section" ? "" : formatAmount(row.total)}
@@ -137,8 +160,11 @@ export function ReportTable({
           </tbody>
         </table>
       </div>
+
       {caption ? (
-        <div className="border-t border-slate-100 px-4 py-2.5 text-xs text-slate-400">{caption}</div>
+        <div className="border-t border-slate-200 bg-slate-50/60 px-5 py-3 text-xs text-slate-500">
+          {caption}
+        </div>
       ) : null}
     </div>
   );

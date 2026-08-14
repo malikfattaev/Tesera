@@ -19,13 +19,16 @@ export interface Range {
 }
 
 export const RANGE_PRESETS: { key: RangeKey; label: string }[] = [
-  { key: "all", label: "Всё время" },
-  { key: "today", label: "Сегодня" },
-  { key: "week", label: "Неделя" },
-  { key: "month", label: "Месяц" },
-  { key: "quarter", label: "Квартал" },
   { key: "year", label: "Год" },
+  { key: "quarter", label: "Квартал" },
+  { key: "month", label: "Месяц" },
+  { key: "week", label: "Неделя" },
+  { key: "today", label: "Сегодня" },
+  { key: "all", label: "Всё время" },
 ];
+
+/** Default period: the whole current year. */
+export const DEFAULT_PRESET: RangeKey = "year";
 
 function startOfDay(date: Date): Date {
   const d = new Date(date);
@@ -54,24 +57,32 @@ export function resolveRange(params: {
     return { key: "custom", from, to, label: "Свой период" };
   }
 
-  const key = (params.period ?? "all") as RangeKey;
+  const key = (params.period ?? DEFAULT_PRESET) as RangeKey;
   const preset = RANGE_PRESETS.find((p) => p.key === key);
   if (!preset || key === "all") {
     return { key: "all", label: "Всё время" };
   }
 
-  const to = endOfDay(now);
-  const from = startOfDay(now);
-  if (key === "today") {
-    // from/to already cover today
-  } else if (key === "week") {
-    from.setDate(from.getDate() - 6);
+  // Presets cover whole calendar periods, so a report shows every month of the
+  // year (or quarter), not just the part that has already happened.
+  const year = now.getFullYear();
+  let from = startOfDay(now);
+  let to = endOfDay(now);
+  if (key === "week") {
+    // Current week, Monday to Sunday.
+    const weekday = (now.getDay() + 6) % 7;
+    from = startOfDay(new Date(year, now.getMonth(), now.getDate() - weekday));
+    to = endOfDay(new Date(year, now.getMonth(), now.getDate() - weekday + 6));
   } else if (key === "month") {
-    from.setMonth(from.getMonth(), 1);
+    from = startOfDay(new Date(year, now.getMonth(), 1));
+    to = endOfDay(new Date(year, now.getMonth() + 1, 0));
   } else if (key === "quarter") {
-    from.setMonth(Math.floor(from.getMonth() / 3) * 3, 1);
+    const firstMonth = Math.floor(now.getMonth() / 3) * 3;
+    from = startOfDay(new Date(year, firstMonth, 1));
+    to = endOfDay(new Date(year, firstMonth + 3, 0));
   } else if (key === "year") {
-    from.setMonth(0, 1);
+    from = startOfDay(new Date(year, 0, 1));
+    to = endOfDay(new Date(year, 11, 31));
   }
   return { key, from, to, label: preset.label };
 }

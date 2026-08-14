@@ -20,12 +20,16 @@ export function monthLabel(key: string): string {
   return `${month}.${year}`;
 }
 
+/** A date as "YYYY-MM-DD", the format date inputs expect. */
+export function isoDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 /** Today as "YYYY-MM-DD", for date input defaults. */
 export function today(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
+  return isoDate(new Date());
 }
 
 /** Localised date, e.g. 05.08.2026. */
