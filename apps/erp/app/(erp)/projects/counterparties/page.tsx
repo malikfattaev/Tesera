@@ -22,6 +22,7 @@ export default async function CounterpartiesPage() {
       header: "Название",
       render: (c) => <span className="font-medium text-ink">{c.name}</span>,
     },
+    { key: "inn", header: "ИНН", render: (c) => <span className="tabular-nums">{c.inn}</span> },
     {
       key: "kind",
       header: "Тип",
@@ -48,6 +49,7 @@ export default async function CounterpartiesPage() {
             label="Новый контрагент"
             fields={[
               { name: "name", label: "Название", placeholder: "ООО Ромашка", required: true },
+              { name: "inn", label: "ИНН", placeholder: "301234567", required: true },
               {
                 name: "kind",
                 label: "Тип",

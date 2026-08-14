@@ -22,24 +22,31 @@ export const Account = defineEntity({
   },
 });
 
-/** A single money movement in or out of an account. */
+/**
+ * A single money movement. `direction` decides which fields apply:
+ * - "out" (расход): spends from `accountId`, no counterparty.
+ * - "in" (доход): lands on `accountId`, may name a `counterpartyId`.
+ * - "transfer" (перевод): moves from `accountId` to `toAccountId`, no category.
+ */
 export const Transaction = defineEntity({
   name: "transaction",
   label: "Операция",
   fields: {
     date: t.date().label("Дата"),
-    direction: t.enum(["in", "out"]).label("Направление"),
+    direction: t.enum(["in", "out", "transfer"]).label("Тип"),
     amount: t.int().label("Сумма"),
-    categoryId: t.relation("category").label("Категория"),
+    categoryId: t.relation("category").optional().label("Категория"),
     accountId: t.relation("account").label("Счёт"),
-    counterparty: t.string().optional().label("Контрагент"),
+    toAccountId: t.relation("account").optional().label("Счёт зачисления"),
+    counterpartyId: t.relation("counterparty").optional().label("Контрагент"),
     note: t.string().optional().label("Комментарий"),
   },
 });
 
 export const DIRECTION_LABELS: Record<string, string> = {
-  in: "Приход",
+  in: "Доход",
   out: "Расход",
+  transfer: "Перевод",
 };
 
 export const ACCOUNT_KIND_LABELS: Record<string, string> = {

@@ -47,24 +47,71 @@ export async function createAccount(formData: FormData): Promise<void> {
   revalidatePath("/finance/accounts");
 }
 
-export async function createTransaction(formData: FormData): Promise<void> {
+/** Paths whose numbers depend on transactions. */
+function revalidateMoney(): void {
+  revalidatePath("/finance/transactions/expenses");
+  revalidatePath("/finance/transactions/income");
+  revalidatePath("/finance/transactions/transfers");
+  revalidatePath("/finance/accounts");
+  revalidatePath("/reports/cashflow");
+  revalidatePath("/dashboard");
+}
+
+/** Расход: money leaves an account. Expenses carry no counterparty. */
+export async function createExpense(formData: FormData): Promise<void> {
   const app = await getApp();
   await app.repo(Transaction).create(
     {
       date: date(formData, "date") ?? new Date(),
-      direction: (text(formData, "direction") || "out") as "in" | "out",
+      direction: "out",
       amount: Number(formData.get("amount") ?? 0),
       categoryId: text(formData, "categoryId"),
       accountId: text(formData, "accountId"),
-      counterparty: optionalText(formData, "counterparty"),
       note: optionalText(formData, "note"),
     },
     WEB_CONTEXT,
   );
-  revalidatePath("/finance/transactions");
-  revalidatePath("/finance/accounts");
-  revalidatePath("/reports/cashflow");
-  revalidatePath("/dashboard");
+  revalidateMoney();
+}
+
+/** Доход: money arrives, optionally attributed to a counterparty. */
+export async function createIncome(formData: FormData): Promise<void> {
+  const app = await getApp();
+  await app.repo(Transaction).create(
+    {
+      date: date(formData, "date") ?? new Date(),
+      direction: "in",
+      amount: Number(formData.get("amount") ?? 0),
+      categoryId: text(formData, "categoryId"),
+      accountId: text(formData, "accountId"),
+      counterpartyId: optionalText(formData, "counterpartyId"),
+      note: optionalText(formData, "note"),
+    },
+    WEB_CONTEXT,
+  );
+  revalidateMoney();
+}
+
+/** Перевод: money moves between two own accounts. */
+export async function createTransfer(formData: FormData): Promise<void> {
+  const app = await getApp();
+  const accountId = text(formData, "accountId");
+  const toAccountId = text(formData, "toAccountId");
+  if (accountId === toAccountId) {
+    throw new Error("Счёт списания и счёт зачисления должны отличаться");
+  }
+  await app.repo(Transaction).create(
+    {
+      date: date(formData, "date") ?? new Date(),
+      direction: "transfer",
+      amount: Number(formData.get("amount") ?? 0),
+      accountId,
+      toAccountId,
+      note: optionalText(formData, "note"),
+    },
+    WEB_CONTEXT,
+  );
+  revalidateMoney();
 }
 
 // --- Люди ---
@@ -119,6 +166,7 @@ export async function createCounterparty(formData: FormData): Promise<void> {
   await app.repo(Counterparty).create(
     {
       name: text(formData, "name"),
+      inn: text(formData, "inn"),
       kind: (text(formData, "kind") || "client") as "client" | "supplier" | "partner",
       phone: optionalText(formData, "phone"),
       email: optionalText(formData, "email"),

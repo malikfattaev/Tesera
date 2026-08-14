@@ -6,6 +6,7 @@ export const Counterparty = defineEntity({
   label: "Контрагент",
   fields: {
     name: t.string().label("Название"),
+    inn: t.string().label("ИНН"),
     kind: t.enum(["client", "supplier", "partner"]).default("client").label("Тип"),
     phone: t.string().optional().label("Телефон"),
     email: t.string().optional().label("Email"),

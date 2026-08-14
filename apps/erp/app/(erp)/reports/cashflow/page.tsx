@@ -1,7 +1,10 @@
-import { Card, CardHeader, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
+import { DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Category, Transaction } from "@/src/tesera/modules/finance";
+import { totals } from "@/src/tesera/finance-calc";
 import { money, monthKey, monthLabel, signedMoney } from "@/src/tesera/format";
+import { filterByRange, resolveRange } from "@/src/tesera/range";
+import { DateRangeFilter } from "@/src/ui/DateRangeFilter";
 
 interface MonthRow {
   id: string;
@@ -11,16 +14,25 @@ interface MonthRow {
   net: number;
 }
 
-export default async function CashflowReportPage() {
+export default async function CashflowReportPage({
+  searchParams,
+}: {
+  searchParams: { period?: string; from?: string; to?: string };
+}) {
   const app = await getApp();
-  const [txs, categories] = await Promise.all([
+  const [all, categories] = await Promise.all([
     app.repo(Transaction).list(),
     app.repo(Category).list(),
   ]);
 
+  const range = resolveRange(searchParams);
+  const txs = filterByRange(all, range);
+
   // Cash movement grouped by month.
   const byMonth = new Map<string, { income: number; expense: number }>();
   for (const t of txs) {
+    // Transfers move money between own accounts, they are not cash flow.
+    if (t.direction === "transfer") continue;
     const key = monthKey(t.date);
     const row = byMonth.get(key) ?? { income: 0, expense: 0 };
     if (t.direction === "in") row.income += t.amount;
@@ -40,7 +52,7 @@ export default async function CashflowReportPage() {
   // Expenses grouped by category.
   const byCategory = new Map<string, number>();
   for (const t of txs) {
-    if (t.direction === "out") {
+    if (t.direction === "out" && t.categoryId) {
       byCategory.set(t.categoryId, (byCategory.get(t.categoryId) ?? 0) + t.amount);
     }
   }
@@ -52,8 +64,7 @@ export default async function CashflowReportPage() {
     }))
     .sort((a, b) => b.total - a.total);
 
-  const income = txs.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
-  const expense = txs.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
+  const { income, expense } = totals(txs);
 
   const monthColumns: Column<MonthRow>[] = [
     { key: "month", header: "Месяц", render: (r) => <span className="font-medium text-ink">{r.month}</span> },
@@ -84,6 +95,10 @@ export default async function CashflowReportPage() {
   return (
     <>
       <PageHeader title="Движения по деньгам" subtitle="Приходы и расходы по месяцам" />
+
+      <div className="mb-5">
+        <DateRangeFilter />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Всего пришло" value={money(income)} tone="positive" />

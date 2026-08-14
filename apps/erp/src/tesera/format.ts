@@ -20,6 +20,14 @@ export function monthLabel(key: string): string {
   return `${month}.${year}`;
 }
 
+/** Today as "YYYY-MM-DD", for date input defaults. */
+export function today(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 /** Localised date, e.g. 05.08.2026. */
 export function formatDate(date: Date | string): string {
   return new Date(date).toLocaleDateString("ru-RU");

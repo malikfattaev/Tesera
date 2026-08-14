@@ -9,6 +9,19 @@ const SYS: Context = { actor: { id: "seed", roles: ["admin"] } };
 export async function seed(app: TeseraApp): Promise<void> {
   if ((await app.repo(Account).count()) > 0) return;
 
+  // --- Контрагенты (нужны раньше финансов: доходы ссылаются на них) ---
+  const cp = (
+    name: string,
+    inn: string,
+    kind: "client" | "supplier" | "partner",
+    phone: string,
+    email: string,
+  ) => app.repo(Counterparty).create({ name, inn, kind, phone, email }, SYS);
+
+  const romashka = await cp("ООО Ромашка", "301234567", "client", "+998 90 123 45 67", "hello@romashka.uz");
+  await cp("Hosting Provider", "302876543", "supplier", "+998 71 200 00 00", "billing@host.uz");
+  const school = await cp("Школа №42", "303456789", "client", "+998 90 555 44 33", "info@school42.uz");
+
   // --- Финансы ---
   const cat = (name: string, direction: "in" | "out") =>
     app.repo(Category).create({ name, direction }, SYS);
@@ -26,26 +39,37 @@ export async function seed(app: TeseraApp): Promise<void> {
     .repo(Account)
     .create({ name: "Касса", kind: "cash", currency: "UZS" }, SYS);
 
-  const tx = (
+  const expense = (date: string, amount: number, categoryId: string, accountId: string, note: string) =>
+    app
+      .repo(Transaction)
+      .create({ date: new Date(date), direction: "out", amount, categoryId, accountId, note }, SYS);
+
+  const income = (
     date: string,
-    direction: "in" | "out",
     amount: number,
     categoryId: string,
     accountId: string,
-    counterparty: string,
+    counterpartyId: string,
+    note: string,
   ) =>
-    app
-      .repo(Transaction)
-      .create(
-        { date: new Date(date), direction, amount, categoryId, accountId, counterparty },
-        SYS,
-      );
+    app.repo(Transaction).create(
+      { date: new Date(date), direction: "in", amount, categoryId, accountId, counterpartyId, note },
+      SYS,
+    );
 
-  await tx("2026-03-10", "out", 9_000_000, salary.id, main.id, "Зарплаты март");
-  await tx("2026-08-05", "in", 10_000_000, sales.id, main.id, "Оплата от клиента");
-  await tx("2026-08-07", "out", 4_994_000, office.id, main.id, "Аренда офиса");
-  await tx("2026-08-09", "out", 3_000, office.id, cash.id, "Канцелярия");
-  await tx("2026-08-11", "out", 3_000, office.id, cash.id, "Кофе в офис");
+  const transfer = (date: string, amount: number, from: string, to: string, note: string) =>
+    app.repo(Transaction).create(
+      { date: new Date(date), direction: "transfer", amount, accountId: from, toAccountId: to, note },
+      SYS,
+    );
+
+  await expense("2026-03-10", 9_000_000, salary.id, main.id, "Зарплаты март");
+  await income("2026-08-05", 10_000_000, sales.id, main.id, romashka.id, "Оплата по договору");
+  await expense("2026-08-07", 4_994_000, office.id, main.id, "Аренда офиса");
+  await expense("2026-08-09", 3_000, office.id, cash.id, "Канцелярия");
+  await expense("2026-08-11", 3_000, office.id, cash.id, "Кофе в офис");
+  await income("2026-08-12", 6_000_000, sales.id, main.id, school.id, "Аванс за портал");
+  await transfer("2026-08-13", 2_000_000, main.id, cash.id, "Пополнение кассы");
 
   // --- Люди ---
   const dep = (name: string, head?: string) =>
@@ -85,17 +109,6 @@ export async function seed(app: TeseraApp): Promise<void> {
   await emp("Тимур Рахимов", seniorEngineer.id, engineering.id, "timur@tesera.dev", 15_000_000, "2025-04-20");
 
   // --- Проекты ---
-  const cp = (
-    name: string,
-    kind: "client" | "supplier" | "partner",
-    phone: string,
-    email: string,
-  ) => app.repo(Counterparty).create({ name, kind, phone, email }, SYS);
-
-  const romashka = await cp("ООО Ромашка", "client", "+998 90 123 45 67", "hello@romashka.uz");
-  await cp("Hosting Provider", "supplier", "+998 71 200 00 00", "billing@host.uz");
-  const school = await cp("Школа №42", "client", "+998 90 555 44 33", "info@school42.uz");
-
   const proj = (
     name: string,
     counterpartyId: string | undefined,

@@ -2,6 +2,7 @@ import { PageHeader, StatCard } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Account, ACCOUNT_KIND_LABELS, Transaction } from "@/src/tesera/modules/finance";
 import { createAccount } from "@/src/tesera/actions";
+import { balancesByAccount } from "@/src/tesera/finance-calc";
 import { money } from "@/src/tesera/format";
 import { AddRecord } from "@/src/ui/AddRecord";
 
@@ -12,11 +13,7 @@ export default async function AccountsPage() {
     app.repo(Transaction).list(),
   ]);
 
-  const balance = new Map<string, number>();
-  for (const t of txs) {
-    const delta = t.direction === "in" ? t.amount : -t.amount;
-    balance.set(t.accountId, (balance.get(t.accountId) ?? 0) + delta);
-  }
+  const balance = balancesByAccount(txs);
 
   return (
     <>

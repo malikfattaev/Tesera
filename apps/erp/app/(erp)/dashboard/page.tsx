@@ -8,6 +8,7 @@ import {
 } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Category, Transaction } from "@/src/tesera/modules/finance";
+import { totals } from "@/src/tesera/finance-calc";
 import { money, monthKey, monthLabel, signedMoney } from "@/src/tesera/format";
 
 export default async function DashboardPage() {
@@ -17,16 +18,13 @@ export default async function DashboardPage() {
     app.repo(Category).list(),
   ]);
 
-  const income = txs.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
-  const expense = txs.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
-  const balance = income - expense;
+  const balance = totals(txs).net;
 
   // Reporting period = the most recent month present in the data.
   const months = txs.map((t) => monthKey(t.date)).sort();
   const period = months.length ? months[months.length - 1]! : monthKey(new Date());
   const inPeriod = txs.filter((t) => monthKey(t.date) === period);
-  const incomeMonth = inPeriod.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
-  const expenseMonth = inPeriod.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
+  const { income: incomeMonth, expense: expenseMonth } = totals(inPeriod);
 
   // Expenses grouped by month.
   const byMonth = new Map<string, number>();
@@ -40,7 +38,9 @@ export default async function DashboardPage() {
   // Expenses grouped by category.
   const byCategory = new Map<string, number>();
   for (const t of txs) {
-    if (t.direction === "out") byCategory.set(t.categoryId, (byCategory.get(t.categoryId) ?? 0) + t.amount);
+    if (t.direction === "out" && t.categoryId) {
+      byCategory.set(t.categoryId, (byCategory.get(t.categoryId) ?? 0) + t.amount);
+    }
   }
   const donutData = [...byCategory.entries()].map(([id, value]) => ({
     label: categories.find((c) => c.id === id)?.name ?? "—",
