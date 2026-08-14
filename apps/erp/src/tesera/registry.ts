@@ -13,6 +13,8 @@ export interface NavItem {
   label: string;
   /** Icon key resolved to a Lucide icon in the Sidebar. */
   icon: string;
+  /** Access section this item belongs to; roles and menu settings use it. */
+  section: string;
   /** Set for a plain link; omit when the item is a group. */
   href?: string;
   /** Set for a collapsible group; omit for a plain link. */
@@ -25,9 +27,10 @@ export interface NavItem {
  * entry here — the shell renders the rest.
  */
 export const nav: NavItem[] = [
-  { label: "Панель управления", href: "/dashboard", icon: "dashboard" },
+  { label: "Панель управления", href: "/dashboard", icon: "dashboard", section: "dashboard" },
   {
     label: "Администрирование",
+    section: "admin",
     icon: "settings",
     children: [
       { label: "Пользователи", href: "/admin/users" },
@@ -36,6 +39,7 @@ export const nav: NavItem[] = [
   },
   {
     label: "Справочники",
+    section: "directories",
     icon: "book",
     children: [
       { label: "Категории расходов", href: "/directories/expense-categories" },
@@ -44,6 +48,7 @@ export const nav: NavItem[] = [
   },
   {
     label: "Финансы",
+    section: "finance",
     icon: "wallet",
     children: [
       { label: "Расчётные счета", href: "/finance/accounts" },
@@ -52,6 +57,7 @@ export const nav: NavItem[] = [
   },
   {
     label: "Проекты",
+    section: "projects",
     icon: "projects",
     children: [
       { label: "Проекты", href: "/projects" },
@@ -60,6 +66,7 @@ export const nav: NavItem[] = [
   },
   {
     label: "Люди",
+    section: "people",
     icon: "users",
     children: [
       { label: "Сотрудники", href: "/people" },
@@ -69,6 +76,7 @@ export const nav: NavItem[] = [
   },
   {
     label: "Отчёты",
+    section: "reports",
     icon: "reports",
     children: [
       { label: "Движения по деньгам", href: "/reports/cashflow" },

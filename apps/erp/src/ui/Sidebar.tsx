@@ -116,9 +116,16 @@ function NavGroup({
   );
 }
 
-export function Sidebar({ items }: { items: NavItem[] }) {
+export function Sidebar({
+  items,
+  user,
+}: {
+  items: NavItem[];
+  user: { name: string; role: string };
+}) {
   const pathname = usePathname();
   const isActive = makeIsActive(pathname, items);
+  const settingsActive = pathname.startsWith("/settings");
   return (
     <aside className="flex w-[264px] shrink-0 flex-col bg-[#141824] text-slate-300">
       <div className="px-6 pb-5 pt-8 text-center">
@@ -156,15 +163,21 @@ export function Sidebar({ items }: { items: NavItem[] }) {
 
       <div className="mx-8 border-t border-white/10" />
 
-      <div className="flex items-center gap-3 px-5 py-4">
-        <Avatar name="Малик Фаттаев" />
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-white">
-            Малик Фаттаев
-          </div>
-          <div className="truncate text-xs text-slate-400">Основатель</div>
+      {/* The profile row opens personal settings. */}
+      <Link
+        href="/settings"
+        className={cn(
+          "group flex items-center gap-3 px-5 py-4 transition",
+          settingsActive ? "bg-white/10" : "hover:bg-white/5",
+        )}
+      >
+        <Avatar name={user.name} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium text-white">{user.name}</div>
+          <div className="truncate text-xs text-slate-400">{user.role}</div>
         </div>
-      </div>
+        <Settings className="h-4 w-4 shrink-0 text-slate-500 transition group-hover:text-slate-300" />
+      </Link>
     </aside>
   );
 }

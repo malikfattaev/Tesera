@@ -47,6 +47,8 @@ export const User = defineEntity({
     passwordHash: t.string().label("Пароль"),
     roleId: t.relation("role").label("Роль"),
     active: t.boolean().default(true).label("Активен"),
+    /** Sections the user chose to hide from their own menu. */
+    hiddenSections: t.multiEnum(ACCESS_SECTIONS).default([]).label("Скрытые разделы"),
   },
 });
 
