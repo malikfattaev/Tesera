@@ -1,12 +1,18 @@
-import { DataTable, PageHeader, type Column } from "@tesera/ui";
+import { PageHeader, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Department, Employee, Position } from "@/src/tesera/modules/people";
 import { createPosition } from "@/src/tesera/actions";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
 
-export default async function PositionsPage() {
+export default async function PositionsPage({
+  searchParams,
+}: {
+  searchParams: TableParams;
+}) {
   const app = await getApp();
   const [positions, departments, employees] = await Promise.all([
     app.repo(Position).list({ orderBy: { field: "name", direction: "asc" } }),
@@ -43,10 +49,11 @@ export default async function PositionsPage() {
     {
       key: "name",
       header: "Должность",
+      value: (p) => p.name,
       render: (p) => <span className="font-medium text-ink">{p.name}</span>,
     },
-    { key: "department", header: "Отдел", render: (p) => departmentName(p.departmentId) },
-    { key: "headcount", header: "Сотрудников", align: "right", render: (p) => headcount(p.id) },
+    { key: "department", header: "Отдел", value: (p) => departmentName(p.departmentId), render: (p) => departmentName(p.departmentId) },
+    { key: "headcount", header: "Сотрудников", align: "right", value: (p) => headcount(p.id), render: (p) => headcount(p.id) },
     {
       key: "actions",
       header: "Действия",
@@ -84,7 +91,13 @@ export default async function PositionsPage() {
         }
       />
 
-      <DataTable columns={columns} rows={positions} empty="Должностей пока нет" />
+      <DataPanel
+          columns={columns}
+          rows={positions}
+          params={searchParams}
+          filename="positions"
+          empty="Должностей пока нет"
+        />
     </>
   );
 }

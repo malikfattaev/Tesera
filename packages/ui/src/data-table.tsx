@@ -8,6 +8,12 @@ export interface Column<T> {
   render?: (row: T) => ReactNode;
   align?: "left" | "right";
   className?: string;
+  /**
+   * Raw value behind the cell, used for search, sorting and export. Provide it
+   * whenever the cell shows something other than the plain field (a looked-up
+   * name, a formatted amount); columns without it, like actions, stay out.
+   */
+  value?: (row: T) => string | number;
 }
 
 /**
@@ -23,16 +29,32 @@ export function DataTable<T extends { id?: string | number }>({
   columns,
   rows,
   empty,
+  toolbar,
+  footer,
+  headerCell,
 }: {
   columns: Column<T>[];
   rows: T[];
   empty?: string;
+  /** Rendered above the table, e.g. search and export. */
+  toolbar?: ReactNode;
+  /** Rendered under the table, e.g. pagination. */
+  footer?: ReactNode;
+  /** Custom header content, e.g. a sortable header link. */
+  headerCell?: (col: Column<T>) => ReactNode;
 }) {
   if (!rows.length) {
-    return <EmptyState title={empty ?? "Нет данных"} />;
+    return (
+      <div className="space-y-3">
+        {toolbar}
+        <EmptyState title={empty ?? "Нет данных"} />
+      </div>
+    );
   }
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200/70 bg-white shadow-card">
+    <div className="space-y-3">
+      {toolbar}
+      <div className="overflow-x-auto rounded-xl border border-slate-200/70 bg-white shadow-card">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
@@ -45,7 +67,7 @@ export function DataTable<T extends { id?: string | number }>({
                   col.className,
                 )}
               >
-                {col.header}
+                {headerCell ? headerCell(col) : col.header}
               </th>
             ))}
           </tr>
@@ -74,6 +96,8 @@ export function DataTable<T extends { id?: string | number }>({
           ))}
         </tbody>
       </table>
+      </div>
+      {footer}
     </div>
   );
 }

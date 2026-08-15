@@ -1,12 +1,18 @@
-import { DataTable, PageHeader, type Column } from "@tesera/ui";
+import { PageHeader, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Category, Transaction } from "@/src/tesera/modules/finance";
 import { createExpenseCategory } from "@/src/tesera/actions";
 import { money } from "@/src/tesera/format";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import { RowActions } from "@/src/ui/RowActions";
 
-export default async function ExpenseCategoriesPage() {
+export default async function ExpenseCategoriesPage({
+  searchParams,
+}: {
+  searchParams: TableParams;
+}) {
   const app = await getApp();
   const [categories, txs] = await Promise.all([
     app.repo(Category).list({ orderBy: { field: "name", direction: "asc" } }),
@@ -20,13 +26,15 @@ export default async function ExpenseCategoriesPage() {
     {
       key: "name",
       header: "Категория",
+      value: (c) => c.name,
       render: (c) => <span className="font-medium text-ink">{c.name}</span>,
     },
-    { key: "count", header: "Операций", align: "right", render: (c) => used(c.id).length },
+    { key: "count", header: "Операций", align: "right", value: (c) => used(c.id).length, render: (c) => used(c.id).length },
     {
       key: "total",
       header: "Сумма расходов",
       align: "right",
+      value: (c) => used(c.id).reduce((s, t) => s + t.amount, 0),
       render: (c) => money(used(c.id).reduce((s, t) => s + t.amount, 0)),
     },
     {
@@ -73,7 +81,13 @@ export default async function ExpenseCategoriesPage() {
         }
       />
 
-      <DataTable columns={columns} rows={rows} empty="Категорий расходов пока нет" />
+      <DataPanel
+          columns={columns}
+          rows={rows}
+          params={searchParams}
+          filename="expense-categories"
+          empty="Категорий расходов пока нет"
+        />
     </>
   );
 }

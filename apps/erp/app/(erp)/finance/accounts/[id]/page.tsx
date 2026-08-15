@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
+import { Badge, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import {
   Account,
@@ -13,6 +13,8 @@ import { Counterparty } from "@/src/tesera/modules/projects";
 import { accountDelta } from "@/src/tesera/finance-calc";
 import { formatDate, isoDate, money, signedMoney } from "@/src/tesera/format";
 import { inRange, resolveRange } from "@/src/tesera/range";
+import type { TableParams } from "@/src/tesera/table";
+import { DataPanel } from "@/src/ui/DataPanel";
 import { DateRangeFilter } from "@/src/ui/DateRangeFilter";
 
 export default async function AccountPage({
@@ -20,7 +22,7 @@ export default async function AccountPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { period?: string; from?: string; to?: string };
+  searchParams: { period?: string; from?: string; to?: string } & TableParams;
 }) {
   const app = await getApp();
   const account = await app.repo(Account).findById(params.id);
@@ -93,15 +95,17 @@ export default async function AccountPage({
   };
 
   const columns: Column<(typeof visible)[number]>[] = [
-    { key: "date", header: "Дата", render: (l) => formatDate(l.date) },
+    { key: "date", header: "Дата", value: (l) => isoDate(new Date(l.date)), render: (l) => formatDate(l.date) },
     {
       key: "kind",
       header: "Тип",
+      value: (l) => l.kind,
       render: (l) => <Badge tone={KIND_TONES[l.kind] ?? "neutral"}>{l.kind}</Badge>,
     },
     {
       key: "description",
       header: "Описание",
+      value: (l) => `${l.description}${l.note ? " · " + l.note : ""}`,
       render: (l) => (
         <span className="text-slate-700">
           {l.description}
@@ -113,6 +117,7 @@ export default async function AccountPage({
       key: "delta",
       header: "Сумма",
       align: "right",
+      value: (l) => l.delta,
       render: (l) => (
         <span className={l.delta > 0 ? "font-medium text-emerald-600" : "font-medium text-ink"}>
           {l.delta > 0 ? `+${money(l.delta)}` : `−${money(-l.delta)}`}
@@ -123,6 +128,7 @@ export default async function AccountPage({
       key: "balance",
       header: "Остаток после",
       align: "right",
+      value: (l) => l.balance,
       render: (l) => (
         <span className={l.balance < 0 ? "text-rose-600" : "text-slate-500"}>
           {signedMoney(l.balance)}
@@ -168,7 +174,13 @@ export default async function AccountPage({
         <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
           История операций
         </div>
-        <DataTable columns={columns} rows={visible} empty="За выбранный период операций нет" />
+        <DataPanel
+        columns={columns}
+        rows={visible}
+        params={searchParams}
+        filename="account-statement"
+        empty="За выбранный период операций нет"
+      />
       </div>
     </>
   );

@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
+import { Badge, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Account, ACCOUNT_KIND_LABELS, Transaction } from "@/src/tesera/modules/finance";
 import { createAccount } from "@/src/tesera/actions";
 import { balancesByAccount, turnoverByAccount } from "@/src/tesera/finance-calc";
 import { money, signedMoney } from "@/src/tesera/format";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
 
@@ -52,7 +54,11 @@ const accountFields = (account?: {
   },
 ];
 
-export default async function AccountsPage() {
+export default async function AccountsPage({
+  searchParams,
+}: {
+  searchParams: TableParams;
+}) {
   const app = await getApp();
   const [accounts, txs] = await Promise.all([
     app.repo(Account).list({ orderBy: { field: "name", direction: "asc" } }),
@@ -71,6 +77,7 @@ export default async function AccountsPage() {
     {
       key: "name",
       header: "Счёт",
+      value: (a) => a.name,
       render: (a) => (
         // Covers the whole row, so clicking anywhere opens the account.
         <Link
@@ -84,6 +91,7 @@ export default async function AccountsPage() {
     {
       key: "kind",
       header: "Тип",
+      value: (a) => ACCOUNT_KIND_LABELS[a.kind] ?? a.kind,
       render: (a) => (
         <Badge tone={KIND_TONES[a.kind] ?? "neutral"}>
           {ACCOUNT_KIND_LABELS[a.kind] ?? a.kind}
@@ -91,17 +99,25 @@ export default async function AccountsPage() {
       ),
     },
     { key: "currency", header: "Валюта", render: (a) => a.currency },
-    { key: "operations", header: "Операций", align: "right", render: (a) => operations(a.id) },
+    {
+      key: "operations",
+      header: "Операций",
+      align: "right",
+      value: (a) => operations(a.id),
+      render: (a) => operations(a.id),
+    },
     {
       key: "turnover",
       header: "Оборот",
       align: "right",
+      value: (a) => turnover.get(a.id) ?? 0,
       render: (a) => <span className="text-slate-500">{money(turnover.get(a.id) ?? 0)}</span>,
     },
     {
       key: "balance",
       header: "Баланс",
       align: "right",
+      value: (a) => balance.get(a.id) ?? 0,
       render: (a) => {
         const value = balance.get(a.id) ?? 0;
         return (
@@ -157,7 +173,13 @@ export default async function AccountsPage() {
       </div>
 
       <div className="mt-6">
-        <DataTable columns={columns} rows={accounts} empty="Счетов пока нет" />
+        <DataPanel
+          columns={columns}
+          rows={accounts}
+          params={searchParams}
+          filename="accounts"
+          empty="Счетов пока нет"
+        />
       </div>
     </>
   );

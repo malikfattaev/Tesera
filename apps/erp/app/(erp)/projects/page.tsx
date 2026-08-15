@@ -1,9 +1,11 @@
-import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
+import { Badge, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Counterparty, PROJECT_STATUS_LABELS, Project } from "@/src/tesera/modules/projects";
 import { createProject } from "@/src/tesera/actions";
 import { formatDate, isoDate, money } from "@/src/tesera/format";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
 
@@ -14,7 +16,11 @@ const STATUS_TONES: Record<string, "brand" | "green" | "amber" | "neutral"> = {
   done: "green",
 };
 
-export default async function ProjectsPage() {
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: TableParams;
+}) {
   const app = await getApp();
   const [projects, counterparties] = await Promise.all([
     app.repo(Project).list({ orderBy: { field: "name", direction: "asc" } }),
@@ -82,21 +88,28 @@ export default async function ProjectsPage() {
     {
       key: "name",
       header: "Проект",
+      value: (p) => p.name,
       render: (p) => <span className="font-medium text-ink">{p.name}</span>,
     },
-    { key: "counterparty", header: "Контрагент", render: (p) => clientName(p.counterpartyId) },
+    { key: "counterparty", header: "Контрагент", value: (p) => clientName(p.counterpartyId), render: (p) => clientName(p.counterpartyId) },
     {
       key: "status",
       header: "Статус",
+      value: (p) => PROJECT_STATUS_LABELS[p.status] ?? p.status,
       render: (p) => (
         <Badge tone={STATUS_TONES[p.status] ?? "neutral"}>
           {PROJECT_STATUS_LABELS[p.status] ?? p.status}
         </Badge>
       ),
     },
-    { key: "lead", header: "Ответственный", render: (p) => p.lead ?? "—" },
-    { key: "deadline", header: "Дедлайн", render: (p) => (p.deadline ? formatDate(p.deadline) : "—") },
-    { key: "budget", header: "Бюджет", align: "right", render: (p) => money(p.budget) },
+    { key: "lead", header: "Ответственный", value: (p) => p.lead ?? "", render: (p) => p.lead ?? "—" },
+    {
+      key: "deadline",
+      header: "Дедлайн",
+      value: (p) => (p.deadline ? isoDate(new Date(p.deadline)) : ""),
+      render: (p) => (p.deadline ? formatDate(p.deadline) : "—"),
+    },
+    { key: "budget", header: "Бюджет", align: "right", value: (p) => p.budget, render: (p) => money(p.budget) },
     {
       key: "actions",
       header: "Действия",
@@ -144,7 +157,13 @@ export default async function ProjectsPage() {
       </div>
 
       <div className="mt-6">
-        <DataTable columns={columns} rows={projects} empty="Проектов пока нет" />
+        <DataPanel
+          columns={columns}
+          rows={projects}
+          params={searchParams}
+          filename="projects"
+          empty="Проектов пока нет"
+        />
       </div>
     </>
   );

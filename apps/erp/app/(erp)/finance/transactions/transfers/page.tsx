@@ -1,11 +1,13 @@
 import { ArrowRight } from "lucide-react";
-import { DataTable, StatCard, type Column } from "@tesera/ui";
+import { StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Account, Transaction } from "@/src/tesera/modules/finance";
 import { createTransfer } from "@/src/tesera/actions";
 import { formatDate, isoDate, money, today } from "@/src/tesera/format";
 import { filterByRange, resolveRange } from "@/src/tesera/range";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import { DateRangeFilter } from "@/src/ui/DateRangeFilter";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
@@ -13,7 +15,7 @@ import { RowActions } from "@/src/ui/RowActions";
 export default async function TransfersPage({
   searchParams,
 }: {
-  searchParams: { period?: string; from?: string; to?: string };
+  searchParams: { period?: string; from?: string; to?: string } & TableParams;
 }) {
   const app = await getApp();
   const [all, accounts] = await Promise.all([
@@ -70,10 +72,11 @@ export default async function TransfersPage({
   ];
 
   const columns: Column<(typeof rows)[number]>[] = [
-    { key: "date", header: "Дата", render: (t) => formatDate(t.date) },
+    { key: "date", header: "Дата", value: (t) => isoDate(new Date(t.date)), render: (t) => formatDate(t.date) },
     {
       key: "route",
       header: "Откуда и куда",
+      value: (t) => `${accountName(t.accountId)} → ${accountName(t.toAccountId)}`,
       render: (t) => (
         <span className="inline-flex items-center gap-2">
           <span>{accountName(t.accountId)}</span>
@@ -82,11 +85,12 @@ export default async function TransfersPage({
         </span>
       ),
     },
-    { key: "note", header: "Комментарий", render: (t) => t.note ?? "—" },
+    { key: "note", header: "Комментарий", value: (t) => t.note ?? "", render: (t) => t.note ?? "—" },
     {
       key: "amount",
       header: "Сумма",
       align: "right",
+      value: (t) => t.amount,
       render: (t) => <span className="font-medium text-ink">{money(t.amount)}</span>,
     },
     {
@@ -133,7 +137,13 @@ export default async function TransfersPage({
         <StatCard label="Операций" value={rows.length} />
       </div>
 
-      <DataTable columns={columns} rows={rows} empty="За выбранный период переводов нет" />
+      <DataPanel
+        columns={columns}
+        rows={rows}
+        params={searchParams}
+        filename="transfers"
+        empty="За выбранный период переводов нет"
+      />
     </>
   );
 }

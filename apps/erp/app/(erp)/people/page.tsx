@@ -1,13 +1,19 @@
-import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
+import { Badge, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Department, Employee, Position } from "@/src/tesera/modules/people";
 import { createEmployee } from "@/src/tesera/actions";
 import { formatDate, isoDate, money } from "@/src/tesera/format";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
 
-export default async function PeoplePage() {
+export default async function PeoplePage({
+  searchParams,
+}: {
+  searchParams: TableParams;
+}) {
   const app = await getApp();
   const [employees, positions, departments] = await Promise.all([
     app.repo(Employee).list({ orderBy: { field: "fullName", direction: "asc" } }),
@@ -70,15 +76,17 @@ export default async function PeoplePage() {
     {
       key: "fullName",
       header: "Сотрудник",
+      value: (e) => e.fullName,
       render: (e) => <span className="font-medium text-ink">{e.fullName}</span>,
     },
-    { key: "position", header: "Должность", render: (e) => positionName(e.positionId) },
-    { key: "department", header: "Отдел", render: (e) => departmentName(e.departmentId) },
-    { key: "email", header: "Email", render: (e) => e.email ?? "—" },
-    { key: "salary", header: "Оклад", align: "right", render: (e) => money(e.salary) },
+    { key: "position", header: "Должность", value: (e) => positionName(e.positionId), render: (e) => positionName(e.positionId) },
+    { key: "department", header: "Отдел", value: (e) => departmentName(e.departmentId), render: (e) => departmentName(e.departmentId) },
+    { key: "email", header: "Email", value: (e) => e.email ?? "", render: (e) => e.email ?? "—" },
+    { key: "salary", header: "Оклад", align: "right", value: (e) => e.salary, render: (e) => money(e.salary) },
     {
       key: "active",
       header: "Статус",
+      value: (e) => (e.active ? "Активен" : "Неактивен"),
       render: (e) =>
         e.active ? <Badge tone="green">Активен</Badge> : <Badge tone="red">Неактивен</Badge>,
     },
@@ -129,7 +137,13 @@ export default async function PeoplePage() {
       </div>
 
       <div className="mt-6">
-        <DataTable columns={columns} rows={employees} empty="Сотрудников пока нет" />
+        <DataPanel
+          columns={columns}
+          rows={employees}
+          params={searchParams}
+          filename="employees"
+          empty="Сотрудников пока нет"
+        />
       </div>
     </>
   );

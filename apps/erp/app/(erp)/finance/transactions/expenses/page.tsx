@@ -1,10 +1,12 @@
-import { DataTable, StatCard, type Column } from "@tesera/ui";
+import { StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Account, Category, Transaction } from "@/src/tesera/modules/finance";
 import { createExpense } from "@/src/tesera/actions";
 import { formatDate, isoDate, money, today } from "@/src/tesera/format";
 import { filterByRange, resolveRange } from "@/src/tesera/range";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import { DateRangeFilter } from "@/src/ui/DateRangeFilter";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
@@ -12,7 +14,7 @@ import { RowActions } from "@/src/ui/RowActions";
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: { period?: string; from?: string; to?: string };
+  searchParams: { period?: string; from?: string; to?: string } & TableParams;
 }) {
   const app = await getApp();
   const [all, accounts, categories] = await Promise.all([
@@ -73,14 +75,15 @@ export default async function ExpensesPage({
   ];
 
   const columns: Column<(typeof rows)[number]>[] = [
-    { key: "date", header: "Дата", render: (t) => formatDate(t.date) },
-    { key: "category", header: "Категория", render: (t) => categoryName(t.categoryId) },
-    { key: "account", header: "Счёт", render: (t) => accountName(t.accountId) },
-    { key: "note", header: "Комментарий", render: (t) => t.note ?? "—" },
+    { key: "date", header: "Дата", value: (t) => isoDate(new Date(t.date)), render: (t) => formatDate(t.date) },
+    { key: "category", header: "Категория", value: (t) => categoryName(t.categoryId), render: (t) => categoryName(t.categoryId) },
+    { key: "account", header: "Счёт", value: (t) => accountName(t.accountId), render: (t) => accountName(t.accountId) },
+    { key: "note", header: "Комментарий", value: (t) => t.note ?? "", render: (t) => t.note ?? "—" },
     {
       key: "amount",
       header: "Сумма",
       align: "right",
+      value: (t) => t.amount,
       render: (t) => <span className="font-medium text-ink">−{money(t.amount)}</span>,
     },
     {
@@ -127,7 +130,13 @@ export default async function ExpensesPage({
         <StatCard label="Операций" value={rows.length} />
       </div>
 
-      <DataTable columns={columns} rows={rows} empty="За выбранный период расходов нет" />
+      <DataPanel
+        columns={columns}
+        rows={rows}
+        params={searchParams}
+        filename="expenses"
+        empty="За выбранный период расходов нет"
+      />
     </>
   );
 }

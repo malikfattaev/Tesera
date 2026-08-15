@@ -1,8 +1,10 @@
-import { Badge, DataTable, PageHeader, type Column } from "@tesera/ui";
+import { Badge, PageHeader, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { ACCESS_SECTIONS, Role, SECTION_LABELS, User } from "@/src/tesera/modules/admin";
 import { createRole } from "@/src/tesera/actions";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
 
@@ -29,7 +31,11 @@ const roleFields = (role?: { name: string; sections: string[] }): FormFieldSpec[
   },
 ];
 
-export default async function RolesPage() {
+export default async function RolesPage({
+  searchParams,
+}: {
+  searchParams: TableParams;
+}) {
   const app = await getApp();
   const [roles, users] = await Promise.all([
     app.repo(Role).list({ orderBy: { field: "name", direction: "asc" } }),
@@ -42,11 +48,13 @@ export default async function RolesPage() {
     {
       key: "name",
       header: "Роль",
+      value: (r) => r.name,
       render: (r) => <span className="font-medium text-ink">{r.name}</span>,
     },
     {
       key: "sections",
       header: "Доступ",
+      value: (r) => r.sections.map((s) => SECTION_LABELS[s] ?? s).join(", "),
       render: (r) =>
         r.sections.length === ACCESS_SECTIONS.length ? (
           <Badge tone="brand">Полный доступ</Badge>
@@ -60,7 +68,7 @@ export default async function RolesPage() {
           <span className="text-slate-400">Нет доступа</span>
         ),
     },
-    { key: "users", header: "Пользователей", align: "right", render: (r) => holders(r.id) },
+    { key: "users", header: "Пользователей", align: "right", value: (r) => holders(r.id), render: (r) => holders(r.id) },
     {
       key: "actions",
       header: "Действия",
@@ -103,7 +111,13 @@ export default async function RolesPage() {
         }
       />
 
-      <DataTable columns={columns} rows={roles} empty="Ролей пока нет" />
+      <DataPanel
+          columns={columns}
+          rows={roles}
+          params={searchParams}
+          filename="roles"
+          empty="Ролей пока нет"
+        />
     </>
   );
 }

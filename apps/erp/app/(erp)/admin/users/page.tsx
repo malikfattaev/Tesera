@@ -1,12 +1,18 @@
-import { Badge, DataTable, PageHeader, StatCard, type Column } from "@tesera/ui";
+import { Badge, PageHeader, StatCard, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { Role, SECTION_LABELS, User } from "@/src/tesera/modules/admin";
 import { createUser } from "@/src/tesera/actions";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
 
-export default async function UsersPage() {
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: TableParams;
+}) {
   const app = await getApp();
   const [users, roles] = await Promise.all([
     app.repo(User).list({ orderBy: { field: "fullName", direction: "asc" } }),
@@ -57,17 +63,25 @@ export default async function UsersPage() {
     {
       key: "fullName",
       header: "Пользователь",
+      value: (u) => u.fullName,
       render: (u) => <span className="font-medium text-ink">{u.fullName}</span>,
     },
-    { key: "login", header: "Логин", render: (u) => <span className="text-slate-600">{u.login}</span> },
+    {
+      key: "login",
+      header: "Логин",
+      value: (u) => u.login,
+      render: (u) => <span className="text-slate-600">{u.login}</span>,
+    },
     {
       key: "role",
       header: "Роль",
+      value: (u) => role(u.roleId)?.name ?? "",
       render: (u) => <Badge tone="brand">{role(u.roleId)?.name ?? "—"}</Badge>,
     },
     {
       key: "access",
       header: "Доступ",
+      value: (u) => (role(u.roleId)?.sections ?? []).map((s) => SECTION_LABELS[s] ?? s).join(", "),
       render: (u) => {
         const sections = role(u.roleId)?.sections ?? [];
         return sections.length ? (
@@ -82,6 +96,7 @@ export default async function UsersPage() {
     {
       key: "active",
       header: "Статус",
+      value: (u) => (u.active ? "Активен" : "Отключён"),
       render: (u) =>
         u.active ? <Badge tone="green">Активен</Badge> : <Badge tone="red">Отключён</Badge>,
     },
@@ -130,7 +145,13 @@ export default async function UsersPage() {
       </div>
 
       <div className="mt-6">
-        <DataTable columns={columns} rows={users} empty="Пользователей пока нет" />
+        <DataPanel
+          columns={columns}
+          rows={users}
+          params={searchParams}
+          filename="users"
+          empty="Пользователей пока нет"
+        />
       </div>
     </>
   );

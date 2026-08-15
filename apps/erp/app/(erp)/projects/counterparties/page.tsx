@@ -1,8 +1,10 @@
-import { Badge, DataTable, PageHeader, type Column } from "@tesera/ui";
+import { Badge, PageHeader, type Column } from "@tesera/ui";
 import { getApp } from "@/src/tesera/engine";
 import { COUNTERPARTY_KIND_LABELS, Counterparty } from "@/src/tesera/modules/projects";
 import { createCounterparty } from "@/src/tesera/actions";
+import type { TableParams } from "@/src/tesera/table";
 import { AddRecord } from "@/src/ui/AddRecord";
+import { DataPanel } from "@/src/ui/DataPanel";
 import type { FormFieldSpec } from "@/src/ui/RecordForm";
 import { RowActions } from "@/src/ui/RowActions";
 
@@ -12,7 +14,11 @@ const KIND_TONES: Record<string, "brand" | "green" | "amber"> = {
   partner: "brand",
 };
 
-export default async function CounterpartiesPage() {
+export default async function CounterpartiesPage({
+  searchParams,
+}: {
+  searchParams: TableParams;
+}) {
   const app = await getApp();
   const counterparties = await app
     .repo(Counterparty)
@@ -65,20 +71,22 @@ export default async function CounterpartiesPage() {
     {
       key: "name",
       header: "Название",
+      value: (c) => c.name,
       render: (c) => <span className="font-medium text-ink">{c.name}</span>,
     },
-    { key: "inn", header: "ИНН", render: (c) => <span className="tabular-nums">{c.inn}</span> },
+    { key: "inn", header: "ИНН", value: (c) => c.inn, render: (c) => <span className="tabular-nums">{c.inn}</span> },
     {
       key: "kind",
       header: "Тип",
+      value: (c) => COUNTERPARTY_KIND_LABELS[c.kind] ?? c.kind,
       render: (c) => (
         <Badge tone={KIND_TONES[c.kind] ?? "neutral"}>
           {COUNTERPARTY_KIND_LABELS[c.kind] ?? c.kind}
         </Badge>
       ),
     },
-    { key: "phone", header: "Телефон", render: (c) => c.phone ?? "—" },
-    { key: "email", header: "Email", render: (c) => c.email ?? "—" },
+    { key: "phone", header: "Телефон", value: (c) => c.phone ?? "", render: (c) => c.phone ?? "—" },
+    { key: "email", header: "Email", value: (c) => c.email ?? "", render: (c) => c.email ?? "—" },
     {
       key: "actions",
       header: "Действия",
@@ -118,7 +126,13 @@ export default async function CounterpartiesPage() {
         }
       />
 
-      <DataTable columns={columns} rows={counterparties} empty="Контрагентов пока нет" />
+      <DataPanel
+          columns={columns}
+          rows={counterparties}
+          params={searchParams}
+          filename="counterparties"
+          empty="Контрагентов пока нет"
+        />
     </>
   );
 }
