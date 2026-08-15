@@ -163,21 +163,27 @@ export function Sidebar({
 
       <div className="mx-8 border-t border-white/10" />
 
-      {/* The profile row opens personal settings. */}
-      <Link
-        href="/settings"
-        className={cn(
-          "group flex items-center gap-3 px-5 py-4 transition",
-          settingsActive ? "bg-white/10" : "hover:bg-white/5",
-        )}
-      >
+      {/* Only the gear is interactive, so the profile row stays calm. */}
+      <div className="flex items-center gap-3 px-5 py-4">
         <Avatar name={user.name} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium text-white">{user.name}</div>
           <div className="truncate text-xs text-slate-400">{user.role}</div>
         </div>
-        <Settings className="h-4 w-4 shrink-0 text-slate-500 transition group-hover:text-slate-300" />
-      </Link>
+        <Link
+          href="/settings"
+          aria-label="Настройки"
+          title="Настройки"
+          className={cn(
+            "shrink-0 rounded-lg p-2 transition",
+            settingsActive
+              ? "bg-white/10 text-white"
+              : "text-slate-500 hover:bg-white/10 hover:text-white",
+          )}
+        >
+          <Settings className="h-4 w-4" />
+        </Link>
+      </div>
     </aside>
   );
 }
